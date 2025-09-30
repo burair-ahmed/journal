@@ -52,28 +52,34 @@ def serialize_trade(trade: dict) -> dict:
 
 def save_trades_to_supabase(df: pd.DataFrame):
     trades = []
-    for _, row in df.iterrows():
+    grouped = df.groupby("position_id")
+
+    for position_id, group in grouped:
+        group_sorted = group.sort_values("time")
+
+        open_deal = group_sorted.iloc[0]
+        close_deal = group_sorted.iloc[-1]
+
         trade = {
-            "ticket": int(row["ticket"]),
-            "symbol": row["symbol"],
-            "deal_time": datetime.utcfromtimestamp(row["time"]).isoformat(),  # ✅ converted
-            "type": int(row["type"]),
-            "volume": float(row["volume"]),
-            "price": float(row["price"]),
-            "profit": float(row["profit"]),
-            "comment": row.get("comment", ""),
-            "order_id": int(row["order"]) if "order" in row and row["order"] else None,
-            # Convert mt5_raw (dict) into JSON-safe structure
-            "mt5_raw": {
-                k: (v.isoformat() if isinstance(v, (datetime, pd.Timestamp)) else v)
-                for k, v in row.to_dict().items()
-            },
+            "position_id": int(position_id),
+            "symbol": str(open_deal["symbol"]),
+            "type": int(open_deal["type"]),  # opening type (buy/sell)
+            "open_time": datetime.utcfromtimestamp(int(open_deal["time"])).isoformat(),
+            "close_time": datetime.utcfromtimestamp(int(close_deal["time"])).isoformat(),
+            "open_price": float(open_deal["price"]),
+            "close_price": float(close_deal["price"]),
+            "volume": float(open_deal["volume"]),  # ✅ FIX: only take volume from open deal
+            "profit": float(group["profit"].sum()),
+            "commission": float(group["commission"].sum() if "commission" in group else 0),
+            "swap": float(group["swap"].sum() if "swap" in group else 0),
+            "comment": str(open_deal["comment"]) if "comment" in open_deal else "",
+            "mt5_raw": group.to_dict(orient="records"),
         }
+
         trades.append(trade)
 
     if trades:
-        # ✅ Batch upsert for better performance
         supabase.table("trades").upsert(trades).execute()
-        print(f"✅ {len(trades)} trades saved to Supabase")
+        print(f"✅ {len(trades)} trades saved to Supabase (grouped by position_id)")
     else:
         print("⚠️ No trades to save")

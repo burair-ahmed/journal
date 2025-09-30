@@ -1,46 +1,26 @@
 import { Card } from "@/components/ui/card";
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   Area,
-  AreaChart
-} from 'recharts';
-import { TrendingUp, PieChart as PieChartIcon, BarChart3, Activity } from "lucide-react";
+  AreaChart,
+} from "recharts";
+import {
+  TrendingUp,
+  PieChart as PieChartIcon,
+  BarChart3,
+} from "lucide-react";
+import { useTrades } from "@/hooks/useTrades"; // ✅ import your hook
 
-// Mock data - will be replaced with API calls
-const assetDistributionData = [
-  { name: 'EURUSD', value: 40, color: '#10b981' },
-  { name: 'GBPUSD', value: 25, color: '#3b82f6' },
-  { name: 'USDJPY', value: 20, color: '#8b5cf6' },
-  { name: 'GOLD', value: 15, color: '#f59e0b' },
-];
-
-const pnlByAssetData = [
-  { symbol: 'EURUSD', pnl: 1500.50 },
-  { symbol: 'GBPUSD', pnl: -320.25 },
-  { symbol: 'USDJPY', pnl: 890.75 },
-  { symbol: 'GOLD', pnl: 445.30 },
-];
-
-const equityCurveData = [
-  { date: '2024-01', cumulative_pnl: 1000 },
-  { date: '2024-02', cumulative_pnl: 1250 },
-  { date: '2024-03', cumulative_pnl: 980 },
-  { date: '2024-04', cumulative_pnl: 1400 },
-  { date: '2024-05', cumulative_pnl: 1750 },
-  { date: '2024-06', cumulative_pnl: 2150 },
-];
-
+// Tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -48,13 +28,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm font-medium">{label}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {typeof entry.value === 'number' ? 
-              (entry.name === 'pnl' || entry.name === 'cumulative_pnl' ? 
-                `$${entry.value.toFixed(2)}` : 
-                entry.value.toFixed(1) + '%'
-              ) : entry.value}
+            {entry.name}:{" "}
+            {typeof entry.value === "number"
+              ? entry.name.includes("pnl")
+                ? `$${entry.value.toFixed(2)}`
+                : entry.value.toFixed(1) + "%"
+              : entry.value}
           </p>
         ))}
+        {/* If hovering "Other", show breakdown */}
+        {payload[0]?.payload?.others &&
+          payload[0].payload.others.map((o: any, i: number) => (
+            <p key={i} className="text-xs ml-2">
+              {o.name}: {o.value.toFixed(1)}%
+            </p>
+          ))}
       </div>
     );
   }
@@ -62,6 +50,78 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const ChartsGrid = () => {
+  const { data: trades, isLoading, error } = useTrades();
+
+  if (isLoading) return <div>Loading charts...</div>;
+  if (error) return <div>Failed to load trades</div>;
+  if (!trades) return null;
+
+  // --- Asset Distribution (by count %) ---
+  const symbolCounts: Record<string, number> = {};
+  trades.forEach((t) => {
+    symbolCounts[t.symbol] = (symbolCounts[t.symbol] || 0) + 1;
+  });
+  const totalTrades = trades.length;
+
+  // Convert to array and sort by count (descending)
+  const sortedSymbols = Object.entries(symbolCounts)
+    .map(([symbol, count]) => ({
+      name: symbol,
+      value: (count / totalTrades) * 100,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
+
+  // Take top 3, group rest into "Other"
+  const top3 = sortedSymbols.slice(0, 3).map((s, i) => ({
+    ...s,
+    color: colors[i],
+  }));
+  const others = sortedSymbols.slice(3);
+  const otherValue = others.reduce((sum, s) => sum + s.value, 0);
+
+  const assetDistributionData =
+    others.length > 0
+      ? [
+          ...top3,
+          {
+            name: "Other",
+            value: otherValue,
+            color: "#f59e0b", // yellow for "Other"
+            others: others,
+          },
+        ]
+      : top3;
+
+  // --- P&L by Asset ---
+ // --- P&L by Asset ---
+const pnlByAsset: Record<string, number> = {};
+trades
+  .filter((t) => t.symbol && t.symbol.toLowerCase() !== "deposit") // 🚫 exclude deposits
+  .forEach((t) => {
+    pnlByAsset[t.symbol] = (pnlByAsset[t.symbol] || 0) + t.profit;
+  });
+
+const pnlByAssetData = Object.entries(pnlByAsset).map(([symbol, pnl]) => ({
+  symbol,
+  pnl,
+}));
+
+
+  // --- Equity Curve ---
+  let cumulative = 0;
+  const equityCurveData = trades
+    .slice()
+    .reverse() // trades are returned desc → reverse to ascending
+    .map((t) => {
+      cumulative += t.profit;
+      return {
+        date: new Date(t.close_time).toISOString().slice(0, 10),
+        cumulative_pnl: cumulative,
+      };
+    });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Asset Distribution Pie Chart */}
@@ -82,7 +142,7 @@ export const ChartsGrid = () => {
               dataKey="value"
             >
               {assetDistributionData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell key={index} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
@@ -91,11 +151,13 @@ export const ChartsGrid = () => {
         <div className="flex flex-wrap gap-2 mt-4">
           {assetDistributionData.map((item, index) => (
             <div key={index} className="flex items-center gap-1 text-xs">
-              <div 
-                className="w-3 h-3 rounded" 
+              <div
+                className="w-3 h-3 rounded"
                 style={{ backgroundColor: item.color }}
               ></div>
-              <span>{item.name} ({item.value}%)</span>
+              <span>
+                {item.name} ({item.value.toFixed(1)}%)
+              </span>
             </div>
           ))}
         </div>
@@ -110,27 +172,28 @@ export const ChartsGrid = () => {
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={pnlByAssetData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="symbol" 
+            <XAxis
+              dataKey="symbol"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
             />
-            <YAxis 
+            <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => `$${value}`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="pnl" 
-              radius={[4, 4, 0, 0]}
-            >
+            <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
               {pnlByAssetData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={entry.pnl >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'}
+                <Cell
+                  key={index}
+                  fill={
+                    entry.pnl >= 0
+                      ? "hsl(var(--profit))"
+                      : "hsl(var(--loss))"
+                  }
                 />
               ))}
             </Bar>
@@ -148,21 +211,29 @@ export const ChartsGrid = () => {
           <AreaChart data={equityCurveData}>
             <defs>
               <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                <stop
+                  offset="5%"
+                  stopColor="hsl(var(--primary))"
+                  stopOpacity={0.3}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="hsl(var(--primary))"
+                  stopOpacity={0}
+                />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
             />
-            <YAxis 
+            <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => `$${value}`}
             />
             <Tooltip content={<CustomTooltip />} />

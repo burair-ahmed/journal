@@ -5,6 +5,7 @@ import { TradezellaProfitFactorCard } from "./TradezellaProfitFactorCard";
 import { TradezellaCalendar } from "./TradezellaCalendar";
 import { TradezellaRightSidebar } from "./TradezellaRightSidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartsGrid } from "./ChartsGrid";
 
 export const Dashboard = () => {
   return (
@@ -49,6 +50,7 @@ export const Dashboard = () => {
 
             {/* Calendar Section */}
             <TradezellaCalendar />
+            <ChartsGrid/>
           </div>
 
           {/* Right Sidebar */}

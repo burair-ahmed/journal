@@ -2,15 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 
 export type Trade = {
-  ticket: number;
+  position_id: number;
   symbol: string;
-  deal_time: string;
   type: number;
+  open_time: string;
+  close_time: string;
+  open_price: number;
+  close_price: number;
   volume: number;
-  price: number;
   profit: number;
+  commission: number;
+  swap: number;
   comment: string;
-  order_id?: number;
+  mt5_raw?: any;
 };
 
 // --------------------
@@ -23,14 +27,14 @@ export function useTrades() {
       const { data, error } = await supabase
         .from("trades")
         .select("*")
-        .order("deal_time", { ascending: false });
+        .order("close_time", { ascending: false }); // ✅ sort by close_time
       if (error) throw error;
       return data as Trade[];
     },
   });
 }
 
-// --------------------
+/// --------------------
 // Daily PnL + deposit
 // --------------------
 export interface DailyStat {
@@ -51,12 +55,9 @@ export function useDailyPnL(month: number, year: number) {
       const { data, error } = await supabase
         .from("trades")
         .select("*")
-        .gte("deal_time", `${year}-${String(month + 1).padStart(2, "0")}-01`)
-        .lt(
-          "deal_time",
-          `${year}-${String(month + 2).padStart(2, "0")}-01`
-        )
-        .order("deal_time", { ascending: true });
+        .gte("close_time", `${year}-${String(month + 1).padStart(2, "0")}-01`)
+        .lt("close_time", `${year}-${String(month + 2).padStart(2, "0")}-01`)
+        .order("close_time", { ascending: true });
 
       if (error) throw error;
 
@@ -73,12 +74,18 @@ export function useDailyPnL(month: number, year: number) {
         (t) => !(t.comment && t.comment.toLowerCase().includes("deposit"))
       );
 
-      // ✅ aggregate by day
+      // ✅ aggregate by day (net PnL = profit - commission - swap)
       const daily: Record<string, { pnl: number; trades: number }> = {};
       for (const t of filteredTrades) {
-        const date = t.deal_time.split("T")[0];
+        const date = t.close_time.split("T")[0];
         if (!daily[date]) daily[date] = { pnl: 0, trades: 0 };
-        daily[date].pnl += Number(t.profit);
+
+        const netPnL =
+          Number(t.profit ?? 0) +
+          Number(t.commission ?? 0) -
+          Number(t.swap ?? 0);
+
+        daily[date].pnl += netPnL;
         daily[date].trades += 1;
       }
 
