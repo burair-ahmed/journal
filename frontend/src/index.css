@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tradezella-inspired Design System - Light Theme */
+
+@layer base {
+  :root {
+    /* Base colors - Light theme to match Tradezella */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Primary - Purple/Blue from Tradezella */
+    --primary: 248 95% 67%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary - Light gray for secondary elements */
+    --secondary: 240 4% 96%;
+    --secondary-foreground: 240 6% 10%;
+
+    /* Muted colors for subtle elements */
+    --muted: 240 4% 96%;
+    --muted-foreground: 240 3% 46%;
+
+    /* Accent - Same as primary for consistency */
+    --accent: 248 95% 67%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Destructive - Red for losses */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Trading-specific colors */
+    --profit: 120 60% 45%;
+    --profit-foreground: 0 0% 98%;
+    --loss: 0 84% 60%;
+    --loss-foreground: 0 0% 98%;
+    --neutral: 240 3% 46%;
+    --neutral-foreground: 0 0% 98%;
+
+    /* Border and input colors */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 248 95% 67%;
+
+    /* Sidebar - Dark purple like Tradezella */
+    --sidebar: 248 95% 17%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 248 95% 67%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 248 95% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 248 95% 15%;
+    --sidebar-ring: 248 95% 67%;
+
+    /* Enhanced radius for modern look */
+    --radius: 0.75rem;
+  }
+
+  /* Custom Tradezella styling */
+  .widget-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s ease;
+  }
+  
+  .widget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

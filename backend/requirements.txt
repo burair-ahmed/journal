@@ -1,0 +1,8 @@
+MetaTrader5==5.0.5200
+pandas==2.2.2
+numpy==1.26.4
+python-dotenv==1.0.1
+supabase==2.4.0
+requests==2.31.0
+fastapi
+uvicorn
