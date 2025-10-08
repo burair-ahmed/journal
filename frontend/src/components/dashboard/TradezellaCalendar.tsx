@@ -1,3 +1,4 @@
+// src/components/dashboard/TradezellaCalendar.tsx
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -13,17 +14,6 @@ interface CalendarDay {
 
 type ViewMode = "day" | "month" | "year";
 
-// ✅ Weekly summary widget (dynamic)
-// const WeeklySummaryWidget = ({
-//   dailyPnL,
-//   currentMonth,
-//   currentYear,
-// }: {
-//   dailyPnL: DailyStat[];
-//   currentMonth: number;
-//   currentYear: number;
-// }) => {
-  // ✅ Weekly summary widget (aligned with days grid)
 const WeeklySummaryWidget = ({
   dailyPnL,
   currentMonth,
@@ -33,6 +23,7 @@ const WeeklySummaryWidget = ({
   currentMonth: number;
   currentYear: number;
 }) => {
+  // ... same as before (omitted for brevity, keep your existing WeeklySummaryWidget code)
   const weeklyData = useMemo(() => {
     const result: { week: number; pnl: number; days: number }[] = [];
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -91,18 +82,19 @@ const WeeklySummaryWidget = ({
   );
 };
 
-
-
-export const TradezellaCalendar = () => {
+export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId }) => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
 
-  const { data } = useDailyPnL(currentMonth, currentYear);
+  // Pass accountId into the hook
+  const { data } = useDailyPnL(currentMonth, currentYear, accountId);
   const dailyPnL: DailyStat[] = data?.stats ?? [];
   const deposit = data?.deposit ?? 10000;
 
+  // rest of component remains identical — keep your rendering logic
+  // ... (copy the remaining body from your original TradezellaCalendar unchanged)
   const getDayClass = (day: CalendarDay) => {
     let baseClass =
       "min-h-[100px] p-2 border border-border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all hover:shadow-sm";
@@ -271,7 +263,7 @@ export const TradezellaCalendar = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
         {/* Left: Calendar */}
         <div className="lg:col-span-4 space-y-4">
-          {/* Sleek Header */}
+          {/* Sleek Header */} 
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={goPrev}>
               <ChevronLeft className="h-4 w-4" />

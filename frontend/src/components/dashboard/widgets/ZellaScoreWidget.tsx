@@ -15,8 +15,8 @@ function calculateMetrics(trades: any[]) {
   const losses = profits.filter((p) => p < 0);
 
   const winRate = wins.length / trades.length;
-
-  const avgWin = wins.length > 0 ? wins.reduce((a, b) => a + b, 0) / wins.length : 0;
+  const avgWin =
+    wins.length > 0 ? wins.reduce((a, b) => a + b, 0) / wins.length : 0;
   const avgLoss =
     losses.length > 0
       ? Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length)
@@ -26,28 +26,29 @@ function calculateMetrics(trades: any[]) {
 
   const grossProfit = wins.reduce((a, b) => a + b, 0);
   const grossLoss = Math.abs(losses.reduce((a, b) => a + b, 0));
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 10 : 0;
+  const profitFactor =
+    grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 10 : 0;
 
-  // Normalize 0–1 (clamp to 1 for extreme values)
+  // Normalize 0–1
   const nWinRate = Math.min(1, winRate);
-  const nAvgWinLoss = Math.min(1, avgWinLoss / 3); // scale avg win/loss up to 3x
-  const nProfitFactor = Math.min(1, profitFactor / 3); // scale PF up to 3
+  const nAvgWinLoss = Math.min(1, avgWinLoss / 3);
+  const nProfitFactor = Math.min(1, profitFactor / 3);
 
-  // Zella Score = simple weighted average
+  // Simple weighted average
   const score = ((nWinRate + nAvgWinLoss + nProfitFactor) / 3) * 100;
 
   return { winRate: nWinRate, avgWinLoss: nAvgWinLoss, profitFactor: nProfitFactor, score };
 }
 
 // -------------------------
-// Dynamic Zella Score Widget
+// Zella Score Widget
 // -------------------------
 export const ZellaScoreWidget = () => {
   const { data: trades, isLoading } = useTrades();
 
   if (isLoading) {
     return (
-      <Card className="p-4">
+      <Card className="p-4 border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 animate-pulse">
         <div className="text-sm text-muted-foreground">Loading Zella Score...</div>
       </Card>
     );
@@ -55,88 +56,90 @@ export const ZellaScoreWidget = () => {
 
   const { winRate, avgWinLoss, profitFactor, score } = calculateMetrics(trades || []);
 
-  // Triangle vertices
+  // Triangle base points
   const top = { x: 50, y: 5 };
-  const right = { x: 90, y: 55 };
   const left = { x: 10, y: 55 };
+  const right = { x: 90, y: 55 };
 
-  // Scale function (interpolates point between two coords)
   const lerp = (a: any, b: any, t: number) => ({
     x: a.x + (b.x - a.x) * t,
     y: a.y + (b.y - a.y) * t,
   });
 
-  // Points for metrics
-  const avgWinLossPoint = lerp(top, left, avgWinLoss);
-  const profitFactorPoint = lerp(top, right, profitFactor);
-  const winPoint = lerp(left, right, winRate);
+  // Radar fill points
+  const p1 = lerp(top, left, avgWinLoss);
+  const p2 = lerp(top, right, profitFactor);
+  const p3 = lerp(left, right, winRate);
+  const polygonPoints = `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`;
 
-  const polygonPoints = `
-    ${avgWinLossPoint.x},${avgWinLossPoint.y}
-    ${profitFactorPoint.x},${profitFactorPoint.y}
-    ${winPoint.x},${winPoint.y}
-  `;
-
-  // Background grid layers
+  // Grid layers
   const layers = [0.25, 0.5, 0.75, 1];
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-muted-foreground">Zella Score</span>
-        <Info className="h-4 w-4 text-muted-foreground" />
+    <Card className="relative p-4 border bg-white shadow-sm rounded-xl border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground">Zella Score</span>
+          <Info className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+          BETA
+        </span>
       </div>
 
-      <div className="relative h-36 mb-3">
-        <svg viewBox="0 0 100 60" className="w-full h-full">
-          {/* Background layers */}
+      {/* Radar Chart */}
+      <div className="relative h-36 mb-3 flex items-center justify-center">
+        <svg viewBox="0 0 100 60" className="w-[80%] h-[80%]">
+          {/* Grid Layers */}
           {layers.map((lvl, i) => {
-            const p1 = lerp(top, left, lvl);
-            const p2 = lerp(top, right, lvl);
-            const p3 = lerp(left, right, lvl);
+            const a = lerp(top, left, lvl);
+            const b = lerp(top, right, lvl);
+            const c = lerp(left, right, lvl);
             return (
               <polygon
                 key={i}
-                points={`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`}
+                points={`${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y}`}
                 fill="none"
-                stroke="hsl(var(--muted-foreground))"
-                strokeOpacity="0.2"
+                stroke="#a78bfa"
+                strokeOpacity={0.15}
               />
             );
           })}
 
-          {/* Dynamic polygon */}
+          {/* Filled Area */}
           <polygon
             points={polygonPoints}
-            fill="url(#yellowGradient)"
-            stroke="#f59e0b"
-            strokeWidth="1.5"
+            fill="url(#purpleGradient)"
+            stroke="#8b5cf6"
+            strokeWidth="1"
+            opacity="0.7"
           />
 
           <defs>
-            <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#f59e0b" />
+            <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#c4b5fd" />
+              <stop offset="100%" stopColor="#a78bfa" />
             </linearGradient>
           </defs>
         </svg>
 
         {/* Labels */}
-        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-          <div className="text-xs text-muted-foreground">Win %</div>
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground">
+          Win %
         </div>
-        <div className="absolute top-2 left-2">
-          <div className="text-xs text-muted-foreground">Avg win/loss</div>
+        <div className="absolute top-[60%] left-[10%] text-[10px] text-muted-foreground">
+          Avg win/loss
         </div>
-        <div className="absolute top-2 right-2">
-          <div className="text-xs text-muted-foreground">Profit factor</div>
+        <div className="absolute top-[60%] right-[10%] text-[10px] text-muted-foreground">
+          Profit factor
         </div>
       </div>
 
       {/* Score */}
       <div className="text-center">
         <div className="text-sm text-muted-foreground">Your Zella Score</div>
-        <div className="text-2xl font-bold text-yellow-600">{score.toFixed(2)}</div>
+        <div className="text-2xl font-bold text-purple-600">{score.toFixed(2)}</div>
       </div>
     </Card>
   );

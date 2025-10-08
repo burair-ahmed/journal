@@ -5,10 +5,11 @@ const API_URL: string = import.meta.env.VITE_API_URL as string;
 export interface ApiResponse {
   message?: string;
   status?: string;
+  account_id?: number;
 }
 
-export const syncTrades = async (): Promise<ApiResponse> => {
-  const res = await axios.post<ApiResponse>(`${API_URL}/sync_trades`);
+export const syncTrades = async (accountId: number, days = 90): Promise<ApiResponse> => {
+  const res = await axios.post<ApiResponse>(`${API_URL}/sync_trades/${accountId}?days=${days}`);
   return res.data;
 };
 

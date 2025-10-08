@@ -11,8 +11,8 @@ export default function TradesSync() {
   };
 
   const handleSync = async () => {
-    const data = await syncTrades();
-    if (data.message) setResult(data.message);
+    // const data = await syncTrades();
+    // if (data.message) setResult(data.message);
   };
 
   return (

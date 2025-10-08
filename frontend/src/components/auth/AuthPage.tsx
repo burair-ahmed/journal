@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Mail, Lock, Server, FolderOpen } from "lucide-react";
+import { TrendingUp, Mail, Lock } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 import tradingHero from "@/assets/trading-hero.jpg";
 
 interface AuthPageProps {
@@ -16,39 +17,68 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
-    mt5Login: "",
-    mt5Password: "",
-    mt5Server: "",
-    mt5Path: ""
   });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      alert(error.message);
+    } else {
       onAuthenticated();
-    }, 1500);
+    }
   };
 
-  const handleMT5Setup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate MT5 connection and trade import
-    setTimeout(() => {
-      setIsLoading(false);
-      onAuthenticated();
-    }, 2000);
-  };
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+
+  const { data, error } = await supabase.auth.signUp({
+    email: credentials.email,
+    password: credentials.password,
+  });
+
+  if (error) {
+    setIsLoading(false);
+    alert(error.message);
+    return;
+  }
+
+  // ✅ Insert into users table
+  if (data.user) {
+    const { error: insertError } = await supabase.from("users").upsert(
+      {
+        id: data.user.id, // use the same UUID as Supabase Auth
+        email: data.user.email,
+        name: data.user.user_metadata?.full_name ?? null,
+      },
+      { onConflict: "id" }
+    );
+
+    if (insertError) {
+      console.error("Failed to insert user into users table:", insertError.message);
+    }
+  }
+
+  setIsLoading(false);
+  alert("Registration successful! Please check your email to confirm.");
+  onAuthenticated();
+};
+
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Hero Section */}
       <div className="hidden lg:flex lg:w-1/2 relative">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${tradingHero})` }}
         >
@@ -62,8 +92,8 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
             </div>
             <h2 className="text-2xl font-semibold">Professional Trading Analytics</h2>
             <p className="text-muted-foreground">
-              Connect your MT5 account and unlock powerful insights into your trading performance 
-              with comprehensive analytics, real-time dashboards, and detailed P&L tracking.
+              Register and log in to track your trades, monitor performance, and
+              get real-time insights powered by Supabase.
             </p>
             <div className="grid grid-cols-2 gap-4 pt-6">
               <div className="text-center">
@@ -84,17 +114,18 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
         <div className="w-full max-w-md">
           <Tabs defaultValue="login" className="space-y-6">
             <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold">Welcome Back</h2>
+              <h2 className="text-2xl font-bold">Welcome</h2>
               <p className="text-muted-foreground">
-                Sign in to access your trading dashboard
+                Sign in or create a new account
               </p>
             </div>
 
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="mt5">MT5 Setup</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
 
+            {/* LOGIN */}
             <TabsContent value="login" className="space-y-4">
               <Card className="widget-card p-6">
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -108,12 +139,17 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
                         placeholder="trader@example.com"
                         className="pl-10"
                         value={credentials.email}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) =>
+                          setCredentials((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
@@ -124,7 +160,12 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
                         placeholder="Enter your password"
                         className="pl-10"
                         value={credentials.password}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
+                        onChange={(e) =>
+                          setCredentials((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
@@ -137,83 +178,59 @@ export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="mt5" className="space-y-4">
+            {/* REGISTER */}
+            <TabsContent value="register" className="space-y-4">
               <Card className="widget-card p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">Connect MT5 Account</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Import your trades directly from MetaTrader 5
-                  </p>
-                </div>
-                
-                <form onSubmit={handleMT5Setup} className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="mt5Login">MT5 Login</Label>
-                    <Input
-                      id="mt5Login"
-                      type="text"
-                      placeholder="Your MT5 account number"
-                      value={credentials.mt5Login}
-                      onChange={(e) => setCredentials(prev => ({ ...prev, mt5Login: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="mt5Password">MT5 Password</Label>
-                    <Input
-                      id="mt5Password"
-                      type="password"
-                      placeholder="Your MT5 password"
-                      value={credentials.mt5Password}
-                      onChange={(e) => setCredentials(prev => ({ ...prev, mt5Password: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="mt5Server">Server</Label>
+                    <Label htmlFor="reg-email">Email</Label>
                     <div className="relative">
-                      <Server className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="mt5Server"
-                        type="text"
-                        placeholder="e.g., MetaQuotes-Demo"
+                        id="reg-email"
+                        type="email"
+                        placeholder="trader@example.com"
                         className="pl-10"
-                        value={credentials.mt5Server}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, mt5Server: e.target.value }))}
+                        value={credentials.email}
+                        onChange={(e) =>
+                          setCredentials((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="mt5Path">Terminal Path</Label>
+                    <Label htmlFor="reg-password">Password</Label>
                     <div className="relative">
-                      <FolderOpen className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="mt5Path"
-                        type="text"
-                        placeholder="C:/Program Files/MetaTrader 5/terminal64.exe"
+                        id="reg-password"
+                        type="password"
+                        placeholder="Choose a password"
                         className="pl-10"
-                        value={credentials.mt5Path}
-                        onChange={(e) => setCredentials(prev => ({ ...prev, mt5Path: e.target.value }))}
+                        value={credentials.password}
+                        onChange={(e) =>
+                          setCredentials((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Connecting & Importing Trades..." : "Connect & Import Trades"}
+                    {isLoading ? "Registering..." : "Register"}
                   </Button>
                 </form>
               </Card>
             </TabsContent>
           </Tabs>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo credentials: Any email/password will work for testing</p>
-          </div>
         </div>
       </div>
     </div>
