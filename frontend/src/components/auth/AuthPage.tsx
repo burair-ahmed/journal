@@ -7,72 +7,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Mail, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import tradingHero from "@/assets/trading-hero.jpg";
+import { useAuthContext } from "@/contexts/AuthContext";
 
-interface AuthPageProps {
-  onAuthenticated: () => void;
-}
-
-export const AuthPage = ({ onAuthenticated }: AuthPageProps) => {
+export const AuthPage = () => {
+  const { login, register } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
-  const [credentials, setCredentials] = useState({
-    email: "",
-    password: "",
-  });
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
 
+  // --- LOGIN ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    });
-
-    setIsLoading(false);
-
-    if (error) {
+    try {
+      await login(credentials.email, credentials.password);
+      // Supabase + context will persist session automatically
+    } catch (error: any) {
       alert(error.message);
-    } else {
-      onAuthenticated();
+    } finally {
+      setIsLoading(false);
     }
   };
 
-const handleRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+  // --- REGISTER ---
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+      });
 
-  const { data, error } = await supabase.auth.signUp({
-    email: credentials.email,
-    password: credentials.password,
-  });
+      if (error) throw error;
 
-  if (error) {
-    setIsLoading(false);
-    alert(error.message);
-    return;
-  }
+      // optional: insert into your "users" table
+      if (data?.user) {
+        const { error: insertError } = await supabase.from("users").upsert(
+          {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.full_name ?? null,
+          },
+          { onConflict: "id" }
+        );
+        if (insertError) console.error("Failed to insert user:", insertError.message);
+      }
 
-  // ✅ Insert into users table
-  if (data.user) {
-    const { error: insertError } = await supabase.from("users").upsert(
-      {
-        id: data.user.id, // use the same UUID as Supabase Auth
-        email: data.user.email,
-        name: data.user.user_metadata?.full_name ?? null,
-      },
-      { onConflict: "id" }
-    );
-
-    if (insertError) {
-      console.error("Failed to insert user into users table:", insertError.message);
+      alert("Registration successful! Please check your email to confirm.");
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
     }
-  }
-
-  setIsLoading(false);
-  alert("Registration successful! Please check your email to confirm.");
-  onAuthenticated();
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-background flex">

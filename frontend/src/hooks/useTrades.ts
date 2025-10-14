@@ -114,9 +114,7 @@ export function useDailyPnL(month: number, year: number, accountId?: number) {
         if (!daily[date]) daily[date] = { pnl: 0, trades: 0 };
 
         const netPnL =
-          Number(t.profit ?? 0) +
-          Number(t.swap ?? 0) +
-          Number(t.commission ?? 0);
+          (Number(t.profit ?? 0) + Number(t.commission ?? 0))- Number(t.swap ?? 0) ;
 
         daily[date].pnl += netPnL;
         daily[date].trades += 1;

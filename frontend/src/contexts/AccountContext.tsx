@@ -29,13 +29,29 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Set default account to first in list when accounts load
   useEffect(() => {
-    if (!isLoading && accounts && accounts.length > 0) {
-      // If nothing selected yet, choose first
-      setSelectedAccountId((prev) => (prev ?? accounts[0].id));
-    } else if (!isLoading && (!accounts || accounts.length === 0)) {
-      setSelectedAccountId(null);
-    }
-  }, [accounts, isLoading]);
+  // Load from localStorage
+  const storedAccountId = localStorage.getItem("selectedAccountId");
+
+  if (storedAccountId) {
+    setSelectedAccountId(Number(storedAccountId));
+  }
+}, []);
+
+useEffect(() => {
+  if (selectedAccountId) {
+    localStorage.setItem("selectedAccountId", String(selectedAccountId));
+  } else {
+    localStorage.removeItem("selectedAccountId");
+  }
+}, [selectedAccountId]);
+
+useEffect(() => {
+  if (!isLoading && accounts && accounts.length > 0) {
+    setSelectedAccountId((prev) => prev ?? accounts[0].id);
+  } else if (!isLoading && (!accounts || accounts.length === 0)) {
+    setSelectedAccountId(null);
+  }
+}, [accounts, isLoading]);
 
   return (
     <AccountContext.Provider

@@ -1,15 +1,14 @@
-import { useState } from "react";
+// frontend/src/pages/Index.tsx
 import { AuthPage } from "@/components/auth/AuthPage";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading } = useAuthContext();
 
-  if (!isAuthenticated) {
-    return <AuthPage onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  if (loading) return <div>Loading...</div>;
 
-  return <Dashboard />;
+  return user ? <Dashboard /> : <AuthPage />;
 };
 
 export default Index;

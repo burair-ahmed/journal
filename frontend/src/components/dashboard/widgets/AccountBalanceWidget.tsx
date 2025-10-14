@@ -8,7 +8,7 @@ export const AccountBalanceWidget = ({ accountId }: { accountId?: number }) => {
   if (isLoading) return <Card className="p-4">Loading...</Card>;
   if (!trades?.length) return <Card className="p-4">No trades</Card>;
 
-  const pnl = trades.reduce((sum, t) => sum + t.profit, 0);
+  const pnl = trades.reduce((sum, t) => sum + t.profit + t.commission, 0);
   const totalBalance = deposit + pnl;
 
   return (

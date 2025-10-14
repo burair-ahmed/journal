@@ -1,66 +1,80 @@
-import { 
-  BarChart3, 
-  BookOpen, 
-  Users, 
-  Notebook, 
-  Book, 
-  FileText, 
-  Zap, 
-  User, 
-  GraduationCap, 
+import {
+  BarChart3,
+  BookOpen,
+  Users,
+  Notebook,
+  Book,
+  FileText,
+  Zap,
+  User,
+  GraduationCap,
   Globe,
-  Plus
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const menuItems = [
-  { icon: BarChart3, label: "Dashboard", active: true },
-  { icon: BookOpen, label: "Daily Journal" },
-  { icon: Users, label: "Trades" },
-  { icon: Notebook, label: "Notebook" },
-  { icon: Book, label: "Playbook" },
-  { icon: FileText, label: "Reports" },
-  { icon: Zap, label: "Insights" },
-  { icon: User, label: "Backtesting", badge: "PRO" },
-  { icon: FileText, label: "Trade Replay" },
-  { icon: GraduationCap, label: "Challenges", badge: "PRO" },
-  { icon: User, label: "Mentor Mode" },
-  { icon: GraduationCap, label: "University" },
-  { icon: Globe, label: "Resource Center" },
-];
+import { useUI } from "@/contexts/UIContext";
 
 export const Sidebar = () => {
+  const { activeView, setActiveView } = useUI();
+
+  const menuItems = [
+    { icon: BarChart3, label: "Dashboard", view: "dashboard" },
+    { icon: BookOpen, label: "Daily Journal", view: "dailyJournal" },
+    { icon: Users, label: "Trades", view: "trades" },
+    { icon: Notebook, label: "Notebook", view: "notebook" },
+    { icon: Book, label: "Playbook", view: "playbook" },
+    { icon: FileText, label: "Reports", view: "reports" },
+    { icon: Zap, label: "Insights", view: "insights" },
+    { icon: User, label: "Backtesting", view: "backtesting", badge: "NEW" },
+    { icon: FileText, label: "Trade Replay", view: "tradeReplay" },
+    { icon: GraduationCap, label: "Challenges", view: "challenges", badge: "NEW" },
+    { icon: User, label: "Mentor Mode", view: "mentorMode" },
+    { icon: GraduationCap, label: "University", view: "university" },
+    { icon: Globe, label: "Resource Center", view: "resourceCenter" },
+  ];
+
   return (
-    <div className="w-64 h-screen bg-sidebar text-black flex flex-col">
+    <div className="w-64 h-screen bg-gradient-to-b from-[#0B0D29] to-[#17193C] text-white flex flex-col shadow-xl">
       {/* Logo */}
-      <div className="p-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-black font-bold text-sm">T</span>
-          </div>
-          <span className="text-xl font-bold text-black">TRADEZELLA</span>
+      <div className="p-6 flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+          T
         </div>
+        <span className="text-xl font-bold tracking-wide">MZU Journal</span>
       </div>
 
-      {/* Add Trade Button */}
-      <div className="px-4 mb-6">
-        <Button className="w-full bg-primary hover:bg-primary/90 text-black">
+      {/* Add Trade & Add Account */}
+      <div className="px-4 mb-6 space-y-3">
+        <Button className="w-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white font-semibold rounded-lg">
           <Plus className="h-4 w-4 mr-2" />
           Add Trade
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setActiveView("addAccount")}
+          className="w-full border border-white/20 text-white hover:bg-white/10 font-semibold rounded-lg"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Account
         </Button>
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {menuItems.map((item, index) => (
-          <div key={index} className="relative">
-            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-              item.active ? 'bg-primary text-black' : 'hover:bg-sidebar-foreground/10'
-            }`}>
-              <item.icon className="h-5 w-5 text-black" />
-              <span className="font-medium text-black">{item.label}</span>
+          <div key={index}>
+            <div
+              onClick={() => setActiveView(item.view as any)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                activeView === item.view
+                  ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
               {item.badge && (
-                <span className="ml-auto text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
               )}
@@ -69,13 +83,13 @@ export const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Trading Queen */}
+      {/* Bottom Card */}
       <div className="p-4">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-4 text-center">
+        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-center text-white shadow-lg">
           <div className="w-10 h-10 bg-white/20 rounded-full mx-auto mb-2 flex items-center justify-center">
-            <span className="text-black font-bold">👑</span>
+            <span className="text-lg">👑</span>
           </div>
-          <div className="text-black text-sm font-medium">Trading Queen</div>
+          <div className="text-sm font-medium">Trading Queen</div>
         </div>
       </div>
     </div>
