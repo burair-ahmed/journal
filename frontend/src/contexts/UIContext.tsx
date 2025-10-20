@@ -14,7 +14,10 @@ type View =
   | "mentorMode"
   | "university"
   | "resourceCenter"
-  | "addAccount";
+  | "addAccount"
+  | "profile"
+  | "addTrade"
+  ;
 
 interface UIContextType {
   activeView: View;

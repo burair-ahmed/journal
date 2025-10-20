@@ -9,11 +9,34 @@ import { AccountsManager } from "./AccountsManager";
 import { AccountOverview } from "./AccountOverview";
 import { AccountProvider, useAccountContext } from "@/contexts/AccountContext";
 import { UIProvider, useUI } from "@/contexts/UIContext";
+import { TimeOfDayHeatmap } from "./widgets/TimeOfDayHeatmap";
+import { useParams } from "react-router-dom";
+import { useTrades } from "@/hooks/useTrades";
 
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
+  const { id } = useParams();
+  const accountId = id ? Number(id) : undefined;
 
+  // Fetch trades for this account
+  const { data: trades = [], isLoading, error } = useTrades(accountId);
+
+  if (isLoading) {
+    return <div className="p-6 text-muted-foreground">Loading trades...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-destructive">
+        Error fetching trades: {(error as Error).message}
+      </div>
+    );
+  }
+
+  if (trades.length === 0) {
+    return <div className="p-6 text-muted-foreground">No trades found for this account.</div>;
+  }
   const renderContent = () => {
     switch (activeView) {
       case "dashboard":
@@ -24,6 +47,7 @@ const DashboardContent = () => {
               <TradezellaProfitFactorCard />
             </div>
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
+            <TimeOfDayHeatmap trades={trades} />
             <ChartsGrid accountId={selectedAccountId ?? undefined} />
             {selectedAccountId ? (
               <AccountOverview accountId={selectedAccountId} />
