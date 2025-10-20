@@ -71,16 +71,16 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="flex bg-background min-h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <TopHeader />
-        <div className="flex-1 flex">
-          <div className="flex-1 p-6">{renderContent()}</div>
-          <TradezellaRightSidebar />
-        </div>
-      </div>
+ <div className="bg-background min-h-screen">
+  <Sidebar />
+  <div className="ml-64 flex flex-col min-h-screen">
+    <TopHeader />
+    <div className="flex flex-1">
+      <div className="flex-1 p-6">{renderContent()}</div>
+      <TradezellaRightSidebar />
     </div>
+  </div>
+</div>
   );
 };
 

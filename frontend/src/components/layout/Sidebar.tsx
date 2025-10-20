@@ -34,7 +34,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-screen bg-gradient-to-b from-[#0B0D29] to-[#17193C] text-white flex flex-col shadow-xl">
+    <aside className="fixed top-0 left-0 w-64 h-screen bg-gradient-to-b from-[#0B0D29] to-[#17193C] text-white flex flex-col shadow-xl z-40">
       {/* Logo */}
       <div className="p-6 flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
@@ -92,6 +92,7 @@ export const Sidebar = () => {
           <div className="text-sm font-medium">Trading Queen</div>
         </div>
       </div>
-    </div>
+    </aside>
   );
 };
+
