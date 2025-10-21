@@ -47,7 +47,7 @@ export const TradezellaProfitFactorCard = () => {
   const progress = Math.round((cappedPF / 4) * 100);
 
   return (
-    <Card className="p-4 border-dashed border-2">
+    <Card className="p-4 border-gray-200 border">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-muted-foreground">Profit Factor</span>
         <Info className="h-4 w-4 text-muted-foreground" />

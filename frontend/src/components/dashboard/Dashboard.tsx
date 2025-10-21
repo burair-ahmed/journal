@@ -1,17 +1,21 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopHeader } from "@/components/layout/TopHeader";
-import { TradezellaRightSidebar } from "./TradezellaRightSidebar";
-import { MetricCard } from "./MetricCard";
+// import { TradezellaRightSidebar } from "./TradezellaRightSidebar";
+// import { MetricCard } from "./MetricCard";
 import { TradezellaProfitFactorCard } from "./TradezellaProfitFactorCard";
 import { TradezellaCalendar } from "./TradezellaCalendar";
 import { ChartsGrid } from "./ChartsGrid";
 import { AccountsManager } from "./AccountsManager";
-import { AccountOverview } from "./AccountOverview";
+// import { AccountOverview } from "./AccountOverview";
 import { AccountProvider, useAccountContext } from "@/contexts/AccountContext";
 import { UIProvider, useUI } from "@/contexts/UIContext";
 import { TimeOfDayHeatmap } from "./widgets/TimeOfDayHeatmap";
 import { useParams } from "react-router-dom";
 import { useTrades } from "@/hooks/useTrades";
+import { AccountBalanceWidget } from "./widgets/AccountBalanceWidget";
+import { TradeWinWidget } from "./widgets/TradeWinWidget";
+// import { ProfileForm } from "./ProfileForm";
+import { UserProfile } from "./UserProfile";
 
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
@@ -42,18 +46,16 @@ const DashboardContent = () => {
       case "dashboard":
         return (
           <>
-            <div className="grid grid-cols-2 gap-6 mb-8">
-              <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo />
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              {/* <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo /> */}
+              <AccountBalanceWidget accountId={selectedAccountId ?? undefined} />
               <TradezellaProfitFactorCard />
+              <TradeWinWidget accountId={selectedAccountId ?? undefined} />
             </div>
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
             <TimeOfDayHeatmap trades={trades} />
             <ChartsGrid accountId={selectedAccountId ?? undefined} />
-            {selectedAccountId ? (
-              <AccountOverview accountId={selectedAccountId} />
-            ) : (
-              <AccountsManager />
-            )}
+<UserProfile/>
           </>
         );
 
@@ -64,7 +66,7 @@ const DashboardContent = () => {
         return (
           <div className="text-center text-white mt-20">
             <h1 className="text-2xl font-semibold mb-2 capitalize">{activeView}</h1>
-            <p className="text-white/60">This section is under development.</p>
+            <p className="text-black">This section is under development.</p>
           </div>
         );
     }
@@ -77,7 +79,7 @@ const DashboardContent = () => {
     <TopHeader />
     <div className="flex flex-1">
       <div className="flex-1 p-6">{renderContent()}</div>
-      <TradezellaRightSidebar />
+      {/* <TradezellaRightSidebar /> */}
     </div>
   </div>
 </div>

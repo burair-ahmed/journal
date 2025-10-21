@@ -13,10 +13,30 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUI } from "@/contexts/UIContext";
+import { useAuthContext } from "@/contexts/AuthContext";
+import  {useRef, useState, useEffect } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const Sidebar = () => {
   const { activeView, setActiveView } = useUI();
-
+  const { user, setUser, loading } = useAuthContext();
+  const [formData, setFormData] = useState({
+    name: user?.name ?? "",
+    username: user?.username ?? "",
+    phone: user?.phone ?? "",
+    bio: user?.bio ?? "",
+  });
+    const [preview, setPreview] = useState<string | null>(user?.profile_picture || null);
+  
+  useEffect(() => {
+      setFormData({
+        name: user?.name ?? "",
+        username: user?.username ?? "",
+        phone: user?.phone ?? "",
+        bio: user?.bio ?? "",
+      });
+      setPreview(user?.profile_picture || null);
+    }, [user]);
   const menuItems = [
     { icon: BarChart3, label: "Dashboard", view: "dashboard" },
     { icon: BookOpen, label: "Daily Journal", view: "dailyJournal" },
@@ -85,12 +105,26 @@ export const Sidebar = () => {
 
       {/* Bottom Card */}
       <div className="p-4">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-center text-white shadow-lg">
-          <div className="w-10 h-10 bg-white/20 rounded-full mx-auto mb-2 flex items-center justify-center">
-            <span className="text-lg">👑</span>
-          </div>
-          <div className="text-sm font-medium">Trading Queen</div>
-        </div>
+<div className="flex items-center bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-white shadow-lg">
+  {/* Left column - 20% width */}
+  <div className="w-1/5 flex justify-center">
+    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+      <Avatar className="w-full h-full rounded-full">
+        <AvatarImage src={preview || undefined} alt="User Avatar" />
+        <AvatarFallback className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-xl">
+          {user.name?.charAt(0) || user.email.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+    </div>
+  </div>
+
+  {/* Right column - 80% width */}
+  <div className="w-4/5 flex flex-col justify-center pl-4">
+    <div className="text-lg font-semibold leading-tight">{formData.name || "Unnamed User"}</div>
+    <div className="text-sm text-white/80 truncate">{user.email}</div>
+  </div>
+</div>
+
       </div>
     </aside>
   );

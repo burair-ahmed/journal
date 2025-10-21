@@ -12,7 +12,7 @@ export const AccountBalanceWidget = ({ accountId }: { accountId?: number }) => {
   const totalBalance = deposit + pnl;
 
   return (
-    <Card className="p-5 bg-white/30 border border-white/40 rounded-2xl shadow-xl backdrop-blur-xl">
+    <Card className="p-5 bg-white/30 border border-gray-200 rounded-2xl ">
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm font-medium text-gray-700">Account Balance</span>
         <TrendingUp className="h-5 w-5 text-green-500" />

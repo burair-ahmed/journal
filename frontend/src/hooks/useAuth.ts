@@ -5,26 +5,47 @@ import { supabase } from "@/lib/supabaseClient";
 export type AuthUser = {
   id: string;
   email: string;
+  username?: string | null;
+  name?: string | null;
+  profile_picture?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  created_at?: string | null;
 };
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserProfile = async (id: string) => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) console.error("Error fetching profile:", error);
+    return data;
+  };
+
   useEffect(() => {
-    // Fetch current session
     const getUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (user) {
-        setUser({ id: user.id, email: user.email! });
+        const profile = await fetchUserProfile(user.id);
+        setUser({
+          id: user.id,
+          email: user.email!,
+          ...profile,
+        });
       } else {
         setUser(null);
       }
       setLoading(false);
     };
+
 
     getUser();
 
@@ -33,7 +54,7 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email! });
+        setUser({ id: session.user.id, email: session.user.email!});
       } else {
         setUser(null);
       }
@@ -67,5 +88,5 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { user, loading, login, register, logout };
+  return { user, loading, login, register, logout, setUser };
 }

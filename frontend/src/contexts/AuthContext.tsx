@@ -4,6 +4,7 @@ import { useAuth, AuthUser } from "@/hooks/useAuth";
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
