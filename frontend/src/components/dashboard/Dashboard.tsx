@@ -49,7 +49,7 @@ const DashboardContent = () => {
             <div className="grid grid-cols-3 gap-6 mb-8">
               {/* <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo /> */}
               <AccountBalanceWidget accountId={selectedAccountId ?? undefined} />
-              <TradezellaProfitFactorCard />
+              <TradezellaProfitFactorCard accountId={selectedAccountId ?? undefined}/>
               <TradeWinWidget accountId={selectedAccountId ?? undefined} />
             </div>
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />

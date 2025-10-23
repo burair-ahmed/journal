@@ -60,7 +60,7 @@ export const Sidebar = () => {
         <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
           T
         </div>
-        <span className="text-xl font-bold tracking-wide">MZU Journal</span>
+        <span className="text-xl font-bold tracking-wide">Tradlyn</span>
       </div>
 
       {/* Add Trade & Add Account */}

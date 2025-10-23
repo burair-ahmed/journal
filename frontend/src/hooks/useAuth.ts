@@ -17,44 +17,57 @@ export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user profile from 'users' table
   const fetchUserProfile = async (id: string) => {
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("id", id)
       .single();
-    if (error) console.error("Error fetching profile:", error);
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
+    }
     return data;
   };
 
-  useEffect(() => {
-    const getUser = async () => {
+  // Fetch both auth + profile data together
+  const loadUser = async () => {
+    try {
       const {
-        data: { user },
+        data: { user: authUser },
       } = await supabase.auth.getUser();
 
-      if (user) {
-        const profile = await fetchUserProfile(user.id);
-        setUser({
-          id: user.id,
-          email: user.email!,
-          ...profile,
-        });
-      } else {
+      if (!authUser) {
         setUser(null);
+        return;
       }
+
+      const profile = await fetchUserProfile(authUser.id);
+      setUser({
+        id: authUser.id,
+        email: authUser.email!,
+        ...profile,
+      });
+    } catch (err) {
+      console.error("Error loading user:", err);
+      setUser(null);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
+    // Initial load
+    loadUser();
 
-    getUser();
-
-    // Subscribe to auth changes
+    // Subscribe to auth changes (without async deadlock)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email!});
+        // Just reload in background, don't block render
+        loadUser();
       } else {
         setUser(null);
       }
@@ -65,12 +78,14 @@ export function useAuth() {
     };
   }, []);
 
+  // Auth actions
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) throw error;
+    await loadUser(); // refresh profile
     return data.user;
   };
 
@@ -80,6 +95,7 @@ export function useAuth() {
       password,
     });
     if (error) throw error;
+    await loadUser();
     return data.user;
   };
 
