@@ -4,9 +4,10 @@ import { Trade } from "@/hooks/useTrades";
 
 interface TimeOfDayHeatmapProps {
   trades: Trade[];
+  accountId?: number;
 }
 
-export const TimeOfDayHeatmap = ({ trades }: TimeOfDayHeatmapProps) => {
+export const TimeOfDayHeatmap = ({ trades, accountId }: TimeOfDayHeatmapProps) => {
   // Calculate P&L by hour (0-23)
   const hourlyData = Array.from({ length: 24 }, (_, hour) => {
     const hourTrades = trades.filter(trade => {

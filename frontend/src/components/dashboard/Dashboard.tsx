@@ -16,6 +16,7 @@ import { AccountBalanceWidget } from "./widgets/AccountBalanceWidget";
 import { TradeWinWidget } from "./widgets/TradeWinWidget";
 // import { ProfileForm } from "./ProfileForm";
 import { UserProfile } from "./UserProfile";
+import { TradesTable } from "./TradesTable";
 
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
@@ -53,7 +54,7 @@ const DashboardContent = () => {
               <TradeWinWidget accountId={selectedAccountId ?? undefined} />
             </div>
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
-            <TimeOfDayHeatmap trades={trades} />
+            <TimeOfDayHeatmap trades={trades} accountId={selectedAccountId ?? undefined}/>
             <ChartsGrid accountId={selectedAccountId ?? undefined} />
 <UserProfile/>
           </>
@@ -61,6 +62,9 @@ const DashboardContent = () => {
 
       case "addAccount":
         return <AccountsManager />;
+
+        case "trades":
+          return <TradesTable accountId={selectedAccountId}/>;
 
       default:
         return (
