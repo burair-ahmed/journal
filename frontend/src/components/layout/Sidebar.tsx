@@ -16,10 +16,16 @@ import { useUI } from "@/contexts/UIContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import  {useRef, useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { MoreVertical, LogOut, User as UserIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export const Sidebar = () => {
   const { activeView, setActiveView } = useUI();
-  const { user, setUser, loading } = useAuthContext();
+  const { user, setUser, loading, logout } = useAuthContext();
   const [formData, setFormData] = useState({
     name: user?.name ?? "",
     username: user?.username ?? "",
@@ -104,28 +110,62 @@ export const Sidebar = () => {
       </nav>
 
       {/* Bottom Card */}
-      <div className="p-4">
-<div className="flex items-center bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-white shadow-lg">
-  {/* Left column - 20% width */}
-  <div className="w-1/5 flex justify-center">
-    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-      <Avatar className="w-full h-full rounded-full">
-        <AvatarImage src={preview || undefined} alt="User Avatar" />
-        <AvatarFallback className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-xl">
-          {user.name?.charAt(0) || user.email.charAt(0)}
-        </AvatarFallback>
-      </Avatar>
+    {/* Bottom Card */}
+<div className="p-4">
+  <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-white shadow-lg">
+    {/* Left Side: Avatar + Info */}
+    <div className="flex items-center min-w-0"> {/* min-w-0 ensures truncate works */}
+      <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+        <Avatar className="w-full h-full rounded-full">
+          <AvatarImage src={preview || undefined} alt="User Avatar" />
+          <AvatarFallback className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-xl">
+            {user.name?.charAt(0) || user.email.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="ml-4 flex flex-col overflow-hidden">
+        <div className="text-lg font-semibold leading-tight">
+          {formData.name || "Unnamed User"}
+        </div>
+        <div className="text-sm text-white/80 truncate max-w-[130px] sm:max-w-[150px]">
+          {user.email}
+        </div>
+      </div>
     </div>
-  </div>
 
-  {/* Right column - 80% width */}
-  <div className="w-4/5 flex flex-col justify-center pl-4">
-    <div className="text-lg font-semibold leading-tight">{formData.name || "Unnamed User"}</div>
-    <div className="text-sm text-white/80 truncate">{user.email}</div>
+    {/* Right Side: Popover Menu */}
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="p-1 rounded-full hover:bg-white/10 transition-colors">
+          <MoreVertical className="w-5 h-5 text-white" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="end"
+        className="w-40 bg-[#17193C] text-white border border-white/10 shadow-lg rounded-xl p-2"
+      >
+        <button
+          onClick={() => setActiveView("profile")}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+        >
+          <UserIcon className="w-4 h-4 text-white/80" />
+          <span className="text-sm">Profile</span>
+        </button>
+        <button
+          onClick={() => {
+            logout;
+            setUser(null);
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+        >
+          <LogOut className="w-4 h-4 text-white/80" />
+          <span className="text-sm">Logout</span>
+        </button>
+      </PopoverContent>
+    </Popover>
   </div>
 </div>
-
-      </div>
     </aside>
   );
 };

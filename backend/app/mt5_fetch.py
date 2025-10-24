@@ -57,15 +57,13 @@ def save_trades_to_supabase(df: pd.DataFrame, account_id: int):
     grouped = df.groupby("position_id")
 
     for position_id, group in grouped:
-        
-
         group_sorted = group.sort_values("time")
 
         open_deal = group_sorted.iloc[0]
         close_deal = group_sorted.iloc[-1]
 
         trade = {
-            "account_id": account_id,  # ✅ NEW
+            "account_id": account_id,
             "position_id": int(position_id),
             "ticket": int(open_deal.get("ticket", 0)),
             "order_id": int(open_deal.get("order", 0)),
@@ -89,14 +87,47 @@ def save_trades_to_supabase(df: pd.DataFrame, account_id: int):
         print("⚠️ No trades to save")
         return
 
-    # ✅ Fetch existing trades for this account
-    existing_ids_resp = supabase.table("trades").select("position_id").eq("account_id", account_id).execute()
-    existing_ids = {row["position_id"] for row in existing_ids_resp.data} if existing_ids_resp.data else set()
+    # ✅ Get existing trades for this account
+    existing_resp = supabase.table("trades").select("position_id, profit").eq("account_id", account_id).execute()
+    existing = {row["position_id"]: row for row in existing_resp.data} if existing_resp.data else {}
 
-    new_trades = [t for t in trades if t["position_id"] not in existing_ids]
+    new_trades = []
+    updated_trades = []
 
+    for trade in trades:
+        position_id = trade["position_id"]
+
+        # Check if trade already exists
+        if position_id in existing:
+            existing_trade = existing[position_id]
+
+            # ✅ If profit is 0 in DB but new trade has updated info, update it
+            if existing_trade.get("profit", 0) == 0 or trade["profit"] != existing_trade.get("profit"):
+                updated_trades.append(trade)
+        else:
+            new_trades.append(trade)
+
+    # ✅ Insert new trades
     if new_trades:
         supabase.table("trades").insert(new_trades).execute()
         print(f"✅ {len(new_trades)} new trades saved to Supabase for account {account_id}")
+
+    # ✅ Update existing incomplete/changed trades
+    for trade in updated_trades:
+        supabase.table("trades") \
+            .update({
+                "profit": trade["profit"],
+                "close_time": trade["close_time"],
+                "close_price": trade["close_price"],
+                "commission": trade["commission"],
+                "swap": trade["swap"],
+                "mt5_raw": trade["mt5_raw"]
+            }) \
+            .eq("account_id", account_id) \
+            .eq("position_id", trade["position_id"]) \
+            .execute()
+
+    if updated_trades:
+        print(f"🔁 {len(updated_trades)} trades updated with new profit/close data for account {account_id}")
     else:
-        print(f"⚠️ No new trades to insert for account {account_id}")
+        print("⚠️ No trades required updating")

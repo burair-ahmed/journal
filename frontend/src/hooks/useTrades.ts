@@ -47,19 +47,33 @@ export function useTrades(accountId?: number) {
 export function useFilteredTrades(accountId?: number) {
   const allTradesQuery = useTrades(accountId);
 
-  const filtered = allTradesQuery.data?.filter(
-    (t) => !t.comment?.toLowerCase().includes("deposit+balance")
-  );
+  const allTrades = allTradesQuery.data ?? [];
 
-  const depositTrade = allTradesQuery.data?.find((t) =>
-    t.comment?.toLowerCase().includes("deposit+balance")
-  );
+  // Define a function to detect deposit/balance trades
+  const isDepositTrade = (t: any) => {
+    const comment = t.comment?.toLowerCase() || "";
+    const symbol = t.symbol?.toLowerCase() || "";
 
+    return (
+      comment.includes("deposit") ||
+      comment.includes("balance") ||
+      comment.includes("withdraw") ||
+      t.order_id === 0 ||
+      t.ticket === 0 ||
+      symbol === "" ||
+      symbol === "balance"
+    );
+  };
+
+  const depositTrade = allTrades.find(isDepositTrade);
   const deposit = depositTrade ? Number(depositTrade.profit) : 0;
+
+  // Filter out deposits/balances from normal trades
+  const filtered = allTrades.filter((t) => !isDepositTrade(t));
 
   return {
     ...allTradesQuery,
-    trades: filtered ?? [],
+    trades: filtered,
     deposit,
   };
 }

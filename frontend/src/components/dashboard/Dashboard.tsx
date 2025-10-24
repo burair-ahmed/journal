@@ -66,6 +66,8 @@ const DashboardContent = () => {
         case "trades":
           return <TradesTable accountId={selectedAccountId}/>;
 
+        case "profile":
+          return <UserProfile />;
       default:
         return (
           <div className="text-center text-white mt-20">
