@@ -110,25 +110,36 @@ export function useDailyPnL(month: number, year: number, accountId?: number) {
 
       const trades = data as Trade[];
 
-      // 🪙 Separate deposit
-      const depositTrade = trades.find((t) =>
-        t.comment?.toLowerCase().includes("deposit+balance")
-      );
+      // 🔍 Shared detection logic for deposit/balance trades
+      const isDepositTrade = (t: Trade) => {
+        const comment = t.comment?.toLowerCase() || "";
+        const symbol = t.symbol?.toLowerCase() || "";
+        return (
+          comment.includes("deposit") ||
+          comment.includes("balance") ||
+          comment.includes("withdraw") ||
+          t.order_id === 0 ||
+          t.ticket === 0 ||
+          symbol === "" ||
+          symbol === "balance"
+        );
+      };
+
+      // 🪙 Extract deposit trade if any
+      const depositTrade = trades.find(isDepositTrade);
       const deposit = depositTrade ? Number(depositTrade.profit) : 0;
 
-      // 🚫 Filter out deposit/balance trades
-      const filtered = trades.filter(
-        (t) => !t.comment?.toLowerCase().includes("deposit+balance")
-      );
+      // 🚫 Filter out deposits/balances
+      const filtered = trades.filter((t) => !isDepositTrade(t));
 
-      // 📅 Aggregate by day
+      // 📅 Aggregate by day (only real trades)
       const daily: Record<string, { pnl: number; trades: number }> = {};
       for (const t of filtered) {
         const date = t.close_time.split("T")[0];
         if (!daily[date]) daily[date] = { pnl: 0, trades: 0 };
 
         const netPnL =
-          (Number(t.profit ?? 0) + Number(t.commission ?? 0))- Number(t.swap ?? 0) ;
+          Number(t.profit ?? 0) + Number(t.commission ?? 0) - Number(t.swap ?? 0);
 
         daily[date].pnl += netPnL;
         daily[date].trades += 1;

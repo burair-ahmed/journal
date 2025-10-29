@@ -1,6 +1,6 @@
 import { useFilteredTrades } from "@/hooks/useTrades";
 import { Card } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, LineChart, BarChart3, Edit3 } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
@@ -44,6 +44,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
               <th className="px-4 py-2 text-right">Side</th>
               <th className="px-4 py-2 text-right">Profit / Loss</th>
               <th className="px-4 py-2 text-right">TP/SL Hit</th>
+              <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
 
@@ -62,19 +63,30 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                   ? "Short"
                   : "N/A";
 
-              // Detect TP/SL hit from comment or raw MT5 data if available
-              const hitStatus =
-                trade.comment?.toLowerCase().includes("tp") ||
-                trade.mt5_raw?.reason === "tp"
-                  ? "TP Hit"
-                  : trade.comment?.toLowerCase().includes("sl") ||
-                    trade.mt5_raw?.reason === "sl"
-                  ? "SL Hit"
-                  : "-";
+              // --- TP/SL Detection Logic ---
+              let hitStatus = "-";
+              const reason = trade.close_reason ?? trade.mt5_raw?.reason ?? trade.comment ?? "";
+              const tp = Number(trade.tp_price ?? trade.tp ?? 0);
+              const sl = Number(trade.sl_price ?? trade.sl ?? 0);
+              const closePrice = Number(trade.close_price ?? 0);
+
+              if (
+                reason.toString().toLowerCase().includes("tp") ||
+                Math.abs(closePrice - tp) < 1e-4
+              ) {
+                hitStatus = "TP Hit";
+              } else if (
+                reason.toString().toLowerCase().includes("sl") ||
+                Math.abs(closePrice - sl) < 1e-4
+              ) {
+                hitStatus = "SL Hit";
+              } else if (reason.toString().toLowerCase().includes("manual")) {
+                hitStatus = "Manual Close";
+              }
 
               return (
                 <tr
-                  key={trade.id}
+                  key={trade.id ?? trade.position_id}
                   className="hover:bg-gray-50/70 transition-colors"
                 >
                   {/* Symbol */}
@@ -82,7 +94,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                     {trade.symbol}
                   </td>
 
-                  {/* Open Price + Time */}
+                  {/* Open */}
                   <td className="px-4 py-2 text-gray-700">
                     <div>{Number(trade.open_price).toFixed(2)}</div>
                     <div className="text-xs text-gray-500">
@@ -90,7 +102,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                     </div>
                   </td>
 
-                  {/* Close Price + Time */}
+                  {/* Close */}
                   <td className="px-4 py-2 text-gray-700">
                     <div>{Number(trade.close_price).toFixed(2)}</div>
                     <div className="text-xs text-gray-500">
@@ -98,12 +110,12 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                     </div>
                   </td>
 
-                  {/* Lot Size */}
+                  {/* Volume */}
                   <td className="px-4 py-2 text-right text-gray-700">
                     {Number(trade.volume).toFixed(2)}
                   </td>
 
-                  {/* Position Side */}
+                  {/* Side */}
                   <td className="px-4 py-2 text-right text-gray-700">
                     {positionSide}
                   </td>
@@ -136,6 +148,20 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                     }`}
                   >
                     {hitStatus}
+                  </td>
+
+                  {/* Action Icons */}
+                  <td className="px-4 py-2 text-right">
+                    <div className="flex items-center justify-end gap-2 text-gray-500">
+                      <Edit3 className="h-4 w-4 cursor-pointer hover:text-blue-600" />
+                      <BarChart3
+                        className="h-4 w-4 cursor-pointer hover:text-indigo-600"
+                        
+                      />
+                      <LineChart
+                        className="h-4 w-4 cursor-pointer hover:text-green-600"
+                      />
+                    </div>
                   </td>
                 </tr>
               );
