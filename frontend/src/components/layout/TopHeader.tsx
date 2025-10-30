@@ -1,5 +1,5 @@
 // frontend/src/components/layout/TopHeader.tsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Filter, Calendar, Repeat } from "lucide-react";
+import { Bell, Filter, Repeat } from "lucide-react";
 import { useAccountContext } from "@/contexts/AccountContext";
 import { syncTrades } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,8 @@ export const TopHeader = () => {
   const { user } = useAuth();
 
   const [syncing, setSyncing] = useState(false);
+  const [autoSync, setAutoSync] = useState(false); // Auto sync toggle state
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSync = async () => {
     if (!selectedAccountId) {
@@ -43,6 +45,27 @@ export const TopHeader = () => {
       setSyncing(false);
     }
   };
+
+  // Automatically sync every 5 minutes when autoSync is enabled
+  useEffect(() => {
+    if (autoSync && selectedAccountId) {
+      // Sync immediately once when toggled on
+      handleSync();
+
+      // Set up interval
+      syncIntervalRef.current = setInterval(() => {
+        handleSync();
+      }, 5 * 60 * 1000); // 5 minutes
+    }
+
+    // Cleanup interval when autoSync disabled or unmounted
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    };
+  }, [autoSync, selectedAccountId]);
 
   return (
     <div className="backdrop-blur-xl bg-background/60 border-b border-border p-4 sticky top-0 z-20">
@@ -94,13 +117,16 @@ export const TopHeader = () => {
             </SelectContent>
           </Select>
 
-          {/* Demo Toggle */}
+          {/* Auto Sync Toggle */}
           <div className="flex items-center gap-2">
-            <Switch defaultChecked />
-            <span className="text-sm text-muted-foreground">Demo Data</span>
+            <Switch
+              checked={autoSync}
+              onCheckedChange={(checked) => setAutoSync(checked)}
+            />
+            <span className="text-sm text-muted-foreground">Auto Sync</span>
           </div>
 
-          {/* Sync Trades */}
+          {/* Sync Trades Button */}
           <Button
             className="bg-primary hover:bg-primary/90"
             onClick={handleSync}

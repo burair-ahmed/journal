@@ -56,7 +56,7 @@ const DashboardContent = () => {
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
             <TimeOfDayHeatmap trades={trades} accountId={selectedAccountId ?? undefined}/>
             <ChartsGrid accountId={selectedAccountId ?? undefined} />
-<UserProfile/>
+{/* <UserProfile/> */}
           </>
         );
 

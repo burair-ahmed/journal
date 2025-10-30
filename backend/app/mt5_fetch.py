@@ -93,7 +93,7 @@ def save_trades_to_supabase(df: pd.DataFrame, account_id: int):
                         if sl_match:
                             sl = float(sl_match.group(1))
 
-        print(f"✅ Final derived TP/SL for position {position_id}: tp={tp}, sl={sl}")
+        # print(f"✅ Final derived TP/SL for position {position_id}: tp={tp}, sl={sl}")
         return float(tp or 0.0), float(sl or 0.0)
 
     trades = []
