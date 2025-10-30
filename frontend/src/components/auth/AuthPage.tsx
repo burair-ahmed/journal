@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Mail, Lock } from "lucide-react";
+import { TrendingUp, Mail, Lock, BarChart3, LineChart } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import tradingHero from "@/assets/trading-hero.jpg";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 export const AuthPage = () => {
-  const { login, register } = useAuthContext();
+  const { login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
 
@@ -20,7 +20,6 @@ export const AuthPage = () => {
     setIsLoading(true);
     try {
       await login(credentials.email, credentials.password);
-      // Supabase + context will persist session automatically
     } catch (error: any) {
       alert(error.message);
     } finally {
@@ -37,12 +36,10 @@ export const AuthPage = () => {
         email: credentials.email,
         password: credentials.password,
       });
-
       if (error) throw error;
 
-      // optional: insert into your "users" table
       if (data?.user) {
-        const { error: insertError } = await supabase.from("users").upsert(
+        await supabase.from("users").upsert(
           {
             id: data.user.id,
             email: data.user.email,
@@ -50,7 +47,6 @@ export const AuthPage = () => {
           },
           { onConflict: "id" }
         );
-        if (insertError) console.error("Failed to insert user:", insertError.message);
       }
 
       alert("Registration successful! Please check your email to confirm.");
@@ -62,64 +58,87 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Hero Section */}
-      <div className="hidden lg:flex lg:w-1/2 relative">
+    <div className="min-h-screen flex bg-gradient-to-r from-[#FDF4FF] to-[#FCE7F3]">
+      {/* Left Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden rounded-r-[3rem]">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center scale-105 transform"
           style={{ backgroundImage: `url(${tradingHero})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-background/20"></div>
-        </div>
-        <div className="relative z-10 flex items-center justify-center p-12">
-          <div className="max-w-md text-center space-y-6">
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <TrendingUp className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold">TradeJournal Pro</h1>
-            </div>
-            <h2 className="text-2xl font-semibold">Professional Trading Analytics</h2>
-            <p className="text-muted-foreground">
-              Register and log in to track your trades, monitor performance, and
-              get real-time insights powered by Supabase.
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#7C3AED]/70 via-[#DB2777]/30 to-transparent" />
+              <div className="relative z-10 flex flex-col justify-center px-16 py-20 text-white space-y-10 max-w-lg">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-3">
+              Analyze Your Trades. <br /> Grow Your Edge.
+            </h1>
+            <p className="text-gray-100 text-base leading-relaxed">
+              TradeJournal Pro helps traders track every position, identify
+              performance patterns, and level up with real analytics — all in
+              one beautiful dashboard.
             </p>
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-profit">+1,245</div>
-                <div className="text-sm text-muted-foreground">Total Trades</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">68.5%</div>
-                <div className="text-sm text-muted-foreground">Win Rate</div>
-              </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 pt-2">
+            <div>
+              <div className="text-3xl font-bold text-white">+3,200</div>
+              <div className="text-sm text-gray-200">Trades Logged</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[#FDE047]">72.3%</div>
+              <div className="text-sm text-gray-200">Avg Win Rate</div>
+            </div>
+          </div>
+
+          <div className="pt-4 space-y-3 text-sm text-gray-100">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-[#FDE047]" />
+              <span>Visualize P/L over time</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <LineChart className="w-4 h-4 text-[#FDE047]" />
+              <span>Identify your top-performing setups</span>
             </div>
           </div>
         </div>
+
       </div>
 
-      {/* Auth Section */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <Tabs defaultValue="login" className="space-y-6">
-            <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold">Welcome</h2>
-              <p className="text-muted-foreground">
-                Sign in or create a new account
-              </p>
-            </div>
+      {/* Auth Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-10 sm:px-10">
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-[#E5E7EB]/60 p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold text-[#1E1E1E]">
+              Welcome Back 👋
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Sign in or create a new account below
+            </p>
+          </div>
 
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+          <Tabs defaultValue="login" className="space-y-8">
+            <TabsList className="grid grid-cols-2 rounded-full border border-[#E5E7EB]/70 bg-[#F9FAFB] p-1">
+              <TabsTrigger
+                value="login"
+                className="rounded-full text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#DB2777] data-[state=active]:text-white font-semibold"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger
+                value="register"
+                className="rounded-full text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#DB2777] data-[state=active]:text-white font-semibold"
+              >
+                Register
+              </TabsTrigger>
             </TabsList>
 
-            {/* LOGIN */}
-            <TabsContent value="login" className="space-y-4">
-              <Card className="widget-card p-6">
-                <form onSubmit={handleLogin} className="space-y-4">
+            {/* LOGIN FORM */}
+            <TabsContent value="login">
+              <Card className="p-6 border border-[#E5E7EB]/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="email"
                         type="email"
@@ -140,7 +159,7 @@ export const AuthPage = () => {
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="password"
                         type="password"
@@ -158,21 +177,25 @@ export const AuthPage = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] hover:opacity-90 text-white font-semibold transition-all rounded-xl"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
               </Card>
             </TabsContent>
 
-            {/* REGISTER */}
-            <TabsContent value="register" className="space-y-4">
-              <Card className="widget-card p-6">
-                <form onSubmit={handleRegister} className="space-y-4">
+            {/* REGISTER FORM */}
+            <TabsContent value="register">
+              <Card className="p-6 border border-[#E5E7EB]/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <form onSubmit={handleRegister} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="reg-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="reg-email"
                         type="email"
@@ -193,7 +216,7 @@ export const AuthPage = () => {
                   <div className="space-y-2">
                     <Label htmlFor="reg-password">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="reg-password"
                         type="password"
@@ -211,7 +234,11 @@ export const AuthPage = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] hover:opacity-90 text-white font-semibold transition-all rounded-xl"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Registering..." : "Register"}
                   </Button>
                 </form>

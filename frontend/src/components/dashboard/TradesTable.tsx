@@ -1,6 +1,12 @@
 import { useFilteredTrades } from "@/hooks/useTrades";
 import { Card } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownRight, LineChart, BarChart3, Edit3 } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  LineChart,
+  BarChart3,
+  Edit3,
+} from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
@@ -17,7 +23,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   if (isLoading) {
     return (
-      <Card className="p-4 border-dashed border-2 text-center text-muted-foreground">
+      <Card className="p-4 border border-dashed rounded-2xl bg-gradient-to-r from-[#FDF4FF] to-[#FCE7F3] text-center text-gray-500 font-medium animate-pulse">
         Loading trades...
       </Card>
     );
@@ -25,33 +31,34 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   if (!trades || trades.length === 0) {
     return (
-      <Card className="p-4 border-dashed border-2 text-center text-muted-foreground">
+      <Card className="p-4 border border-dashed rounded-2xl bg-gradient-to-r from-[#FDF4FF] to-[#FCE7F3] text-center text-gray-500 font-medium">
         No trades found for this account.
       </Card>
     );
   }
 
   return (
-    <Card className="p-4 border border-gray-200 rounded-2xl bg-white/40">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100/80 text-gray-700 font-medium">
+    <Card className="p-4 rounded-2xl border border-[#E5E7EB] bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="overflow-x-auto rounded-xl border border-[#E5E7EB]/60">
+        <table className="min-w-full text-sm table-fixed">
+          <thead className="bg-gradient-to-r from-[#741052]/10 via-[#D946EF]/10 to-[#DB2777]/10 text-[#1E1E1E] font-semibold uppercase tracking-wide">
             <tr>
-              <th className="px-4 py-2 text-left">Symbol</th>
-              <th className="px-4 py-2 text-left">Open</th>
-              <th className="px-4 py-2 text-left">Close</th>
-              <th className="px-4 py-2 text-right">Volume</th>
-              <th className="px-4 py-2 text-right">Side</th>
-              <th className="px-4 py-2 text-right">Profit / Loss</th>
-              <th className="px-4 py-2 text-right">TP/SL Hit</th>
-              <th className="px-4 py-2 text-right">Actions</th>
+              <th className="px-5 py-3 text-left w-[10%]">Symbol</th>
+              <th className="px-5 py-3 text-left w-[15%]">Open</th>
+              <th className="px-5 py-3 text-left w-[15%]">Close</th>
+              <th className="px-5 py-3 text-right w-[10%]">Volume</th>
+              <th className="px-5 py-3 text-right w-[10%]">Side</th>
+              <th className="px-5 py-3 text-right w-[15%]">Profit / Loss</th>
+              <th className="px-5 py-3 text-right w-[15%]">TP/SL Hit</th>
+              <th className="px-5 py-3 text-right w-[10%]">Actions</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-[#E5E7EB] text-gray-700">
             {trades.map((trade: any) => {
               const isProfit = Number(trade.profit) > 0;
               const profitColor = isProfit ? "text-green-600" : "text-red-600";
+
               const positionSide =
                 trade.type === 0
                   ? "Buy"
@@ -63,9 +70,9 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                   ? "Short"
                   : "N/A";
 
-              // --- TP/SL Detection Logic ---
               let hitStatus = "-";
-              const reason = trade.close_reason ?? trade.mt5_raw?.reason ?? trade.comment ?? "";
+              const reason =
+                trade.close_reason ?? trade.mt5_raw?.reason ?? trade.comment ?? "";
               const tp = Number(trade.tp_price ?? trade.tp ?? 0);
               const sl = Number(trade.sl_price ?? trade.sl ?? 0);
               const closePrice = Number(trade.close_price ?? 0);
@@ -87,59 +94,75 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
               return (
                 <tr
                   key={trade.id ?? trade.position_id}
-                  className="hover:bg-gray-50/70 transition-colors"
+                  className="group hover:bg-gradient-to-r hover:from-[#FDF4FF] hover:to-[#FCE7F3] transition-all duration-300"
                 >
                   {/* Symbol */}
-                  <td className="px-4 py-2 font-semibold text-gray-800">
-                    {trade.symbol}
+                  <td className="px-5 py-3 font-semibold text-[#1E1E1E] align-top">
+                    <span className="bg-gradient-to-r from-[#741052] via-[#D946EF] to-[#DB2777] bg-clip-text text-transparent">
+                      {trade.symbol}
+                    </span>
                   </td>
 
                   {/* Open */}
-                  <td className="px-4 py-2 text-gray-700">
-                    <div>{Number(trade.open_price).toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">
-                      {dayjs(trade.open_time).format("DD MMM HH:mm")}
+                  <td className="px-5 py-3 text-gray-700 align-top">
+                    <div className="flex flex-col">
+                      <span className="font-medium tabular-nums">
+                        {Number(trade.open_price).toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {dayjs(trade.open_time).format("DD MMM HH:mm")}
+                      </span>
                     </div>
                   </td>
 
                   {/* Close */}
-                  <td className="px-4 py-2 text-gray-700">
-                    <div>{Number(trade.close_price).toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">
-                      {dayjs(trade.close_time).format("DD MMM HH:mm")}
+                  <td className="px-5 py-3 text-gray-700 align-top">
+                    <div className="flex flex-col">
+                      <span className="font-medium tabular-nums">
+                        {Number(trade.close_price).toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {dayjs(trade.close_time).format("DD MMM HH:mm")}
+                      </span>
                     </div>
                   </td>
 
                   {/* Volume */}
-                  <td className="px-4 py-2 text-right text-gray-700">
+                  <td className="px-5 py-3 text-right font-medium text-gray-700 tabular-nums align-top">
                     {Number(trade.volume).toFixed(2)}
                   </td>
 
                   {/* Side */}
-                  <td className="px-4 py-2 text-right text-gray-700">
-                    {positionSide}
+                  <td className="px-5 py-3 text-right align-top">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        positionSide.toLowerCase().includes("buy") ||
+                        positionSide.toLowerCase().includes("long")
+                          ? "bg-green-50 text-green-600"
+                          : "bg-red-50 text-red-600"
+                      }`}
+                    >
+                      {positionSide}
+                    </span>
                   </td>
 
                   {/* Profit / Loss */}
                   <td
-                    className={`px-4 py-2 text-right font-semibold ${profitColor}`}
+                    className={`px-5 py-3 text-right font-semibold tabular-nums ${profitColor} align-top`}
                   >
-                    {isProfit ? (
-                      <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-1">
+                      {isProfit ? (
                         <ArrowUpRight className="h-4 w-4 text-green-500" />
-                        {Number(trade.profit).toFixed(2)}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-end gap-1">
+                      ) : (
                         <ArrowDownRight className="h-4 w-4 text-red-500" />
-                        {Number(trade.profit).toFixed(2)}
-                      </div>
-                    )}
+                      )}
+                      {Number(trade.profit).toFixed(2)}
+                    </div>
                   </td>
 
                   {/* TP/SL Hit */}
                   <td
-                    className={`px-4 py-2 text-right ${
+                    className={`px-5 py-3 text-right font-medium align-top ${
                       hitStatus === "TP Hit"
                         ? "text-green-600"
                         : hitStatus === "SL Hit"
@@ -150,17 +173,12 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                     {hitStatus}
                   </td>
 
-                  {/* Action Icons */}
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex items-center justify-end gap-2 text-gray-500">
-                      <Edit3 className="h-4 w-4 cursor-pointer hover:text-blue-600" />
-                      <BarChart3
-                        className="h-4 w-4 cursor-pointer hover:text-indigo-600"
-                        
-                      />
-                      <LineChart
-                        className="h-4 w-4 cursor-pointer hover:text-green-600"
-                      />
+                  {/* Actions */}
+                  <td className="px-5 py-3 text-right align-top">
+                    <div className="flex items-center justify-end gap-3">
+                      <Edit3 className="h-4 w-4 text-gray-500 hover:text-[#741052] transition-colors cursor-pointer" />
+                      <BarChart3 className="h-4 w-4 text-gray-500 hover:text-[#7C3AED] transition-colors cursor-pointer" />
+                      <LineChart className="h-4 w-4 text-gray-500 hover:text-[#DB2777] transition-colors cursor-pointer" />
                     </div>
                   </td>
                 </tr>
