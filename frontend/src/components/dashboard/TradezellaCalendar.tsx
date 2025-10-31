@@ -1,14 +1,15 @@
-// src/components/dashboard/TradezellaCalendar.tsx
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
-import { useDailyPnL, DailyStat } from "@/hooks/useTrades";
+import { useDailyPnL, DailyStat, useTrades, Trade } from "@/hooks/useTrades";
 
 interface CalendarDay {
   date: number;
   pnl: number;
   trades: number;
+  dateStr: string;
   percentage?: number;
 }
 
@@ -23,7 +24,6 @@ const WeeklySummaryWidget = ({
   currentMonth: number;
   currentYear: number;
 }) => {
-  // ... same as before (omitted for brevity, keep your existing WeeklySummaryWidget code)
   const weeklyData = useMemo(() => {
     const result: { week: number; pnl: number; days: number }[] = [];
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -88,24 +88,18 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
 
-  // Pass accountId into the hook
   const { data } = useDailyPnL(currentMonth, currentYear, accountId);
+const { data: allTrades = [] } = useTrades(accountId);
+
   const dailyPnL: DailyStat[] = data?.stats ?? [];
   const deposit = data?.deposit ?? 10000;
 
-  // rest of component remains identical — keep your rendering logic
-  // ... (copy the remaining body from your original TradezellaCalendar unchanged)
   const getDayClass = (day: CalendarDay) => {
     let baseClass =
       "min-h-[100px] p-2 border border-border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all hover:shadow-sm";
-
-    if (day.pnl > 0) {
-      baseClass += " bg-green-100 text-green-800";
-    } else if (day.pnl < 0) {
-      baseClass += " bg-red-100 text-red-800";
-    } else {
-      baseClass += " bg-gray-50";
-    }
+    if (day.pnl > 0) baseClass += " bg-green-100 text-green-800";
+    else if (day.pnl < 0) baseClass += " bg-red-100 text-red-800";
+    else baseClass += " bg-gray-50";
     return baseClass;
   };
 
@@ -113,13 +107,11 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
     const formatted = amount.toFixed(2);
     return amount >= 0 ? `$${formatted}` : `-$${Math.abs(Number(formatted))}`;
   };
-
-  const formatPercentage = (percentage: number) =>
-    `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
+  const formatPercentage = (p: number) =>
+    `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-
   const calendarCells: (CalendarDay | null)[] = Array(firstDay).fill(null);
 
   for (let d = 1; d <= daysInMonth; d++) {
@@ -128,22 +120,16 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
       "0"
     )}-${String(d).padStart(2, "0")}`;
     const stat = dailyPnL.find((s) => s.date === dateStr);
-
     calendarCells.push({
       date: d,
       pnl: stat?.pnl ?? 0,
       trades: stat?.trades ?? 0,
+      dateStr,
       percentage: stat && deposit > 0 ? (stat.pnl / deposit) * 100 : undefined,
     });
   }
-
-  // ✅ Ensure exactly 6 rows (42 cells)
-  while (calendarCells.length < 42) {
-    calendarCells.push(null);
-  }
-  if (calendarCells.length > 42) {
-    calendarCells.splice(42); // just in case
-  }
+  while (calendarCells.length < 42) calendarCells.push(null);
+  if (calendarCells.length > 42) calendarCells.splice(42);
 
   const isCurrentMonth =
     currentMonth === today.getMonth() && currentYear === today.getFullYear();
@@ -153,14 +139,9 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
       if (currentMonth === 0) {
         setCurrentMonth(11);
         setCurrentYear((y) => y - 1);
-      } else {
-        setCurrentMonth((m) => m - 1);
-      }
-    } else if (viewMode === "month") {
-      setCurrentYear((y) => y - 1);
-    } else if (viewMode === "year") {
-      setCurrentYear((y) => y - 12);
-    }
+      } else setCurrentMonth((m) => m - 1);
+    } else if (viewMode === "month") setCurrentYear((y) => y - 1);
+    else if (viewMode === "year") setCurrentYear((y) => y - 12);
   };
 
   const goNext = () => {
@@ -168,14 +149,9 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
       if (currentMonth === 11) {
         setCurrentMonth(0);
         setCurrentYear((y) => y + 1);
-      } else {
-        setCurrentMonth((m) => m + 1);
-      }
-    } else if (viewMode === "month") {
-      setCurrentYear((y) => y + 1);
-    } else if (viewMode === "year") {
-      setCurrentYear((y) => y + 12);
-    }
+      } else setCurrentMonth((m) => m + 1);
+    } else if (viewMode === "month") setCurrentYear((y) => y + 1);
+    else if (viewMode === "year") setCurrentYear((y) => y + 12);
   };
 
   const goToday = () => {
@@ -184,6 +160,32 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
     setViewMode("day");
   };
 
+  // ✅ Compute daily details for Popover
+  const getDayTradesData = (dateStr: string) => {
+    const tradesForDay = allTrades.filter((t) =>
+      t.close_time.startsWith(dateStr)
+    );
+    if (!tradesForDay.length) return null;
+
+    const wins = tradesForDay.filter((t) => t.profit > 0);
+    const losses = tradesForDay.filter((t) => t.profit < 0);
+    const biggestWin = Math.max(...wins.map((t) => t.profit), 0);
+    const biggestLoss = Math.min(...losses.map((t) => t.profit), 0);
+    const totalLots = tradesForDay.reduce((sum, t) => sum + t.volume, 0);
+    const symbols = Array.from(new Set(tradesForDay.map((t) => t.symbol)));
+
+    return {
+      totalTrades: tradesForDay.length,
+      winningTrades: wins.length,
+      losingTrades: losses.length,
+      biggestWin,
+      biggestLoss,
+      totalLots,
+      symbols,
+    };
+  };
+
+  // ✅ Day View with Popover integration
   const renderDayView = () => (
     <>
       <div className="grid grid-cols-7 gap-2 mb-4">
@@ -201,18 +203,93 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
         {calendarCells.map((day, index) => (
           <div key={index} className="aspect-[4/3]">
             {day ? (
-              <div className={getDayClass(day)}>
-                <div className="font-semibold mb-1">{day.date}</div>
-                <div className="font-bold">{formatCurrency(day.pnl)}</div>
-                <div className="text-xs opacity-70">{day.trades} trades</div>
-                {day.percentage !== undefined && (
-                  <div className="text-xs font-medium mt-1">
-                    {formatPercentage(day.percentage)}
-                  </div>
-                )}
-              </div>
+              <Popover>
+  <PopoverTrigger asChild>
+    <div className={getDayClass(day)}>
+      <div className="font-semibold mb-1">{day.date}</div>
+      <div className="font-bold">{formatCurrency(day.pnl)}</div>
+      <div className="text-xs opacity-70">{day.trades} trades</div>
+      {day.percentage !== undefined && (
+        <div className="text-xs font-medium mt-1">
+          {formatPercentage(day.percentage)}
+        </div>
+      )}
+    </div>
+  </PopoverTrigger>
+
+  <PopoverContent className="w-[350px] p-4 rounded-xl border shadow-lg bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 transition-all">
+    {(() => {
+      const info = getDayTradesData(day.dateStr);
+      return info ? (
+        <div className="space-y-3">
+          {/* Header */}
+          <div className="flex flex-col border-b pb-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Trade Summary
+            </span>
+            <span className="text-lg font-semibold text-primary">
+              {day.dateStr}
+            </span>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total Trades</span>
+              <span className="font-medium">{info.totalTrades}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Winning Trades</span>
+              <span className="text-green-600 font-medium">
+                {info.winningTrades}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Losing Trades</span>
+              <span className="text-red-600 font-medium">
+                {info.losingTrades}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Biggest Win</span>
+              <span className="text-green-600 font-medium">
+                {formatCurrency(info.biggestWin)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Biggest Loss</span>
+              <span className="text-red-600 font-medium">
+                {formatCurrency(info.biggestLoss)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total Lot Size</span>
+              <span className="font-medium">{info.totalLots.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Symbols */}
+          <div className="pt-2 border-t text-xs text-muted-foreground">
+            <span className="font-medium text-sm text-foreground">
+              Symbols:
+            </span>{" "}
+            {info.symbols.length > 0 ? (
+              <span>{info.symbols.join(", ")}</span>
             ) : (
-              // ✅ Empty day with border
+              <span className="italic opacity-75">None</span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center text-sm text-muted-foreground">
+          No trades for this date
+        </div>
+      );
+    })()}
+  </PopoverContent>
+</Popover>
+
+            ) : (
               <div className="min-h-[100px] p-2 border border-border rounded-lg bg-gray-50 opacity-80"></div>
             )}
           </div>
@@ -265,11 +342,8 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
 
   return (
     <div className="space-y-4">
-      {/* Calendar + Weekly Summary side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* Left: Calendar */}
         <div className="lg:col-span-4 space-y-4">
-          {/* Sleek Header */} 
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={goPrev}>
               <ChevronLeft className="h-4 w-4" />
@@ -303,7 +377,6 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
             </div>
           </div>
 
-          {/* Calendar Body (no Card border) */}
           <div className="p-2">
             {viewMode === "day" && renderDayView()}
             {viewMode === "month" && renderMonthView()}
@@ -311,7 +384,6 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
           </div>
         </div>
 
-        {/* Right: Weekly Summary */}
         <WeeklySummaryWidget
           dailyPnL={dailyPnL}
           currentMonth={currentMonth}
