@@ -1,9 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useDailyPnL, DailyStat, useTrades, Trade } from "@/hooks/useTrades";
+import { cn } from "@/lib/utils";
 
 interface CalendarDay {
   date: number;
@@ -82,14 +87,16 @@ const WeeklySummaryWidget = ({
   );
 };
 
-export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId }) => {
+export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
+  accountId,
+}) => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
 
   const { data } = useDailyPnL(currentMonth, currentYear, accountId);
-const { data: allTrades = [] } = useTrades(accountId);
+  const { data: allTrades = [] } = useTrades(accountId);
 
   const dailyPnL: DailyStat[] = data?.stats ?? [];
   const deposit = data?.deposit ?? 10000;
@@ -204,91 +211,124 @@ const { data: allTrades = [] } = useTrades(accountId);
           <div key={index} className="aspect-[4/3]">
             {day ? (
               <Popover>
-  <PopoverTrigger asChild>
-    <div className={getDayClass(day)}>
-      <div className="font-semibold mb-1">{day.date}</div>
-      <div className="font-bold">{formatCurrency(day.pnl)}</div>
-      <div className="text-xs opacity-70">{day.trades} trades</div>
-      {day.percentage !== undefined && (
-        <div className="text-xs font-medium mt-1">
-          {formatPercentage(day.percentage)}
-        </div>
-      )}
-    </div>
-  </PopoverTrigger>
+                <PopoverTrigger asChild>
+                  <div
+                    className={cn(
+                      getDayClass(day),
+                      "flex flex-col items-start rounded-lg px-2 py-1.5 cursor-pointer transition-colors"
+                    )}
+                  >
+                    <div className="text-sm font-medium">{day.date}</div>
+                    <div className="text-base font-semibold">
+                      {formatCurrency(day.pnl)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {day.trades} trades
+                    </div>
+                    {day.percentage !== undefined && (
+                      <div className="text-xs font-medium mt-1 text-muted-foreground">
+                        {formatPercentage(day.percentage)}
+                      </div>
+                    )}
+                  </div>
+                </PopoverTrigger>
 
-  <PopoverContent className="w-[350px] p-4 rounded-xl border shadow-lg bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 transition-all">
-    {(() => {
-      const info = getDayTradesData(day.dateStr);
-      return info ? (
-        <div className="space-y-3">
-          {/* Header */}
-          <div className="flex flex-col border-b pb-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Trade Summary
-            </span>
-            <span className="text-lg font-semibold text-primary">
-              {day.dateStr}
-            </span>
-          </div>
+                <PopoverContent className="w-[360px] p-5 rounded-2xl border bg-background shadow-sm transition-all animate-in fade-in-0 zoom-in-95">
+                  {(() => {
+                    const info = getDayTradesData(day.dateStr);
+                    return info ? (
+                      <div className="space-y-4">
+                        {/* Header */}
+                        <div className="flex flex-col space-y-0.5 pb-3 border-b">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Trade Summary
+                          </span>
+                          <span className="text-lg font-semibold text-foreground">
+                            {day.dateStr}
+                          </span>
+                        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Trades</span>
-              <span className="font-medium">{info.totalTrades}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Winning Trades</span>
-              <span className="text-green-600 font-medium">
-                {info.winningTrades}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Losing Trades</span>
-              <span className="text-red-600 font-medium">
-                {info.losingTrades}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Biggest Win</span>
-              <span className="text-green-600 font-medium">
-                {formatCurrency(info.biggestWin)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Biggest Loss</span>
-              <span className="text-red-600 font-medium">
-                {formatCurrency(info.biggestLoss)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Lot Size</span>
-              <span className="font-medium">{info.totalLots.toFixed(2)}</span>
-            </div>
-          </div>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Total Trades
+                            </span>
+                            <span className="font-medium">
+                              {info.totalTrades}
+                            </span>
+                          </div>
 
-          {/* Symbols */}
-          <div className="pt-2 border-t text-xs text-muted-foreground">
-            <span className="font-medium text-sm text-foreground">
-              Symbols:
-            </span>{" "}
-            {info.symbols.length > 0 ? (
-              <span>{info.symbols.join(", ")}</span>
-            ) : (
-              <span className="italic opacity-75">None</span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center text-sm text-muted-foreground">
-          No trades for this date
-        </div>
-      );
-    })()}
-  </PopoverContent>
-</Popover>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Winning Trades
+                            </span>
+                            <span className="text-green-600 font-medium">
+                              {info.winningTrades}
+                            </span>
+                          </div>
 
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Losing Trades
+                            </span>
+                            <span className="text-red-600 font-medium">
+                              {info.losingTrades}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Biggest Win
+                            </span>
+                            <span className="text-green-600 font-medium">
+                              {formatCurrency(info.biggestWin)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Biggest Loss
+                            </span>
+                            <span className="text-red-600 font-medium">
+                              {formatCurrency(info.biggestLoss)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Total Lot Size
+                            </span>
+                            <span className="font-medium">
+                              {info.totalLots.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Symbols */}
+                        <div className="pt-3 border-t text-sm">
+                          <span className="font-medium text-foreground">
+                            Symbols:
+                          </span>{" "}
+                          {info.symbols.length > 0 ? (
+                            <span className="text-muted-foreground">
+                              {info.symbols.join(", ")}
+                            </span>
+                          ) : (
+                            <span className="italic text-muted-foreground opacity-70">
+                              None
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-sm text-muted-foreground py-4">
+                        No trades for this date
+                      </div>
+                    );
+                  })()}
+                </PopoverContent>
+              </Popover>
             ) : (
               <div className="min-h-[100px] p-2 border border-border rounded-lg bg-gray-50 opacity-80"></div>
             )}
