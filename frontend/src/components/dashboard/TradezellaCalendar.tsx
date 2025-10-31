@@ -136,8 +136,13 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
       percentage: stat && deposit > 0 ? (stat.pnl / deposit) * 100 : undefined,
     });
   }
-  while (calendarCells.length % 7 !== 0) {
+
+  // ✅ Ensure exactly 6 rows (42 cells)
+  while (calendarCells.length < 42) {
     calendarCells.push(null);
+  }
+  if (calendarCells.length > 42) {
+    calendarCells.splice(42); // just in case
   }
 
   const isCurrentMonth =
@@ -207,7 +212,8 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({ accountId
                 )}
               </div>
             ) : (
-              <div className="min-h-[100px] p-2 opacity-30"></div>
+              // ✅ Empty day with border
+              <div className="min-h-[100px] p-2 border border-border rounded-lg bg-gray-50 opacity-80"></div>
             )}
           </div>
         ))}
