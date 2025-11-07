@@ -33,7 +33,6 @@ export const AccountPage = () => {
       const res = await syncTrades(accountId);
       setMessage(res.message || "Trades synced successfully!");
     } catch (err: any) {
-      setMessage(err.response?.data?.detail || "Failed to sync trades");
     } finally {
       setSyncing(false);
     }

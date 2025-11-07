@@ -28,23 +28,35 @@ export const TopHeader = () => {
   const [autoSync, setAutoSync] = useState(false); // Auto sync toggle state
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSync = async () => {
-    if (!selectedAccountId) {
-      toast.error("Please select an account first.");
+const handleSync = async () => {
+  if (!selectedAccountId) {
+    toast.error("Please select an account first.");
+    return;
+  }
+
+  try {
+    setSyncing(true);
+    const res = await syncTrades(selectedAccountId);
+
+    if (!res || res.new_count === undefined || res.updated_count === undefined) {
+      toast.error("Failed to sync trades");
       return;
     }
 
-    try {
-      setSyncing(true);
-      const res = await syncTrades(selectedAccountId);
-      toast.success(res.message ?? "Trades synced successfully!");
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.detail ?? "Failed to sync trades");
-    } finally {
-      setSyncing(false);
+    if (res.new_count === 0 && res.updated_count === 0) {
+      toast(res.message || "No new trades to update", { icon: "ℹ️" });
+    } else {
+      toast.success(
+        `${res.new_count} new and ${res.updated_count} updated trades synced successfully!`
+      );
     }
-  };
+  } catch (err: any) {
+    console.error(err);
+    toast.error(err?.response?.data?.detail ?? "Failed to sync trades");
+  } finally {
+    setSyncing(false);
+  }
+};
 
   // Automatically sync every 5 minutes when autoSync is enabled
   useEffect(() => {

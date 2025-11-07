@@ -17,6 +17,7 @@ import { TradeWinWidget } from "./widgets/TradeWinWidget";
 // import { ProfileForm } from "./ProfileForm";
 import { UserProfile } from "./UserProfile";
 import { TradesTable } from "./TradesTable";
+import { LargestGainLossGauge } from "./widgets/LargestGainLossGauge";
 
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
@@ -40,7 +41,11 @@ const DashboardContent = () => {
   }
 
   if (trades.length === 0) {
-    return <div className="p-6 text-muted-foreground">No trades found for this account.</div>;
+    return (
+      <div className="p-6 text-muted-foreground">
+        No trades found for this account.
+      </div>
+    );
   }
   const renderContent = () => {
     switch (activeView) {
@@ -49,29 +54,39 @@ const DashboardContent = () => {
           <>
             <div className="grid grid-cols-3 gap-6 mb-8">
               {/* <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo /> */}
-              <AccountBalanceWidget accountId={selectedAccountId ?? undefined} />
-              <TradezellaProfitFactorCard accountId={selectedAccountId ?? undefined}/>
+              <AccountBalanceWidget
+                accountId={selectedAccountId ?? undefined}
+              />
+              <TradezellaProfitFactorCard
+                accountId={selectedAccountId ?? undefined}
+              />
               <TradeWinWidget accountId={selectedAccountId ?? undefined} />
             </div>
+            <LargestGainLossGauge accountId={selectedAccountId ?? undefined}/>
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
-            <TimeOfDayHeatmap trades={trades} accountId={selectedAccountId ?? undefined}/>
+            <TimeOfDayHeatmap
+              trades={trades}
+              accountId={selectedAccountId ?? undefined}
+            />
             <ChartsGrid accountId={selectedAccountId ?? undefined} />
-{/* <UserProfile/> */}
+            {/* <UserProfile/> */}
           </>
         );
 
       case "addAccount":
         return <AccountsManager />;
 
-        case "trades":
-          return <TradesTable accountId={selectedAccountId}/>;
+      case "trades":
+        return <TradesTable accountId={selectedAccountId} />;
 
-        case "profile":
-          return <UserProfile />;
+      case "profile":
+        return <UserProfile />;
       default:
         return (
           <div className="text-center text-white mt-20">
-            <h1 className="text-2xl font-semibold mb-2 capitalize">{activeView}</h1>
+            <h1 className="text-2xl font-semibold mb-2 capitalize">
+              {activeView}
+            </h1>
             <p className="text-black">This section is under development.</p>
           </div>
         );
@@ -79,16 +94,16 @@ const DashboardContent = () => {
   };
 
   return (
- <div className="bg-background min-h-screen">
-  <Sidebar />
-  <div className="ml-64 flex flex-col min-h-screen">
-    <TopHeader />
-    <div className="flex flex-1">
-      <div className="flex-1 p-6">{renderContent()}</div>
-      {/* <TradezellaRightSidebar /> */}
+    <div className="bg-background min-h-screen">
+      <Sidebar />
+      <div className="ml-64 flex flex-col min-h-screen">
+        <TopHeader />
+        <div className="flex flex-1">
+          <div className="flex-1 p-6">{renderContent()}</div>
+          {/* <TradezellaRightSidebar /> */}
+        </div>
+      </div>
     </div>
-  </div>
-</div>
   );
 };
 

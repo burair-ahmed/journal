@@ -6,6 +6,9 @@ export interface ApiResponse {
   message?: string;
   status?: string;
   account_id?: number;
+  new_count?: number;
+  updated_count?: number;
+
 }
 
 export const syncTrades = async (accountId: number, days = 90): Promise<ApiResponse> => {

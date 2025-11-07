@@ -198,3 +198,9 @@ def save_trades_to_supabase(df: pd.DataFrame, account_id: int):
         print(f"🔁 {len(updated_trades)} trades updated for account {account_id}")
     else:
         print("⚠️ No trades required updating")
+
+    # ✅ Return counts for frontend display
+    return {
+        "new_count": len(new_trades),
+        "updated_count": len(updated_trades),
+    }
