@@ -18,7 +18,7 @@ import { TradeWinWidget } from "./widgets/TradeWinWidget";
 import { UserProfile } from "./UserProfile";
 import { TradesTable } from "./TradesTable";
 import { LargestGainLossGauge } from "./widgets/LargestGainLossGauge";
-
+import { WinLossSymbolDistribution } from "./widgets/WinLossSymbolDistribution";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
@@ -63,6 +63,7 @@ const DashboardContent = () => {
               <TradeWinWidget accountId={selectedAccountId ?? undefined} />
             </div>
             <LargestGainLossGauge accountId={selectedAccountId ?? undefined}/>
+            <WinLossSymbolDistribution accountId={selectedAccountId ?? undefined} />
             <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
             <TimeOfDayHeatmap
               trades={trades}
