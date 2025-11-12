@@ -17,6 +17,7 @@ interface FFEvent {
   impact: string;
   forecast: string;
   previous: string;
+  actual?: string;
 }
 
 export const NewsFeed = () => {
@@ -51,19 +52,20 @@ export const NewsFeed = () => {
     }
   };
 
-    const getImpactIcon = (impact: string) => {
+  const getImpactIcon = (impact: string) => {
     switch (impact.toLowerCase()) {
       case "high":
-        return <Zap className="text-red-600 w-4 h-4" />;
+        return <Zap className="text-red-600 w-3.5 h-3.5 mr-1" />;
       case "medium":
-        return <Zap className="text-amber-600 w-4 h-4" />;
+        return <Zap className="text-amber-600 w-3.5 h-3.5 mr-1" />;
       case "low":
-        return <Zap className="text-emerald-600 w-4 h-4" />;
+        return <Zap className="text-emerald-600 w-3.5 h-3.5 mr-1" />;
       default:
-        return <Zap className="text-gray-500 w-4 h-4" />;
+        return <Zap className="text-gray-500 w-3.5 h-3.5 mr-1" />;
     }
   };
-  // Group events by date
+
+  // Group and sort events
   const groupedByDate = events.reduce((acc, ev) => {
     const dateKey = dayjs(ev.date).format("YYYY-MM-DD");
     if (!acc[dateKey]) acc[dateKey] = [];
@@ -71,7 +73,6 @@ export const NewsFeed = () => {
     return acc;
   }, {} as Record<string, FFEvent[]>);
 
-  // Sort dates ascending
   const sortedDates = Object.keys(groupedByDate).sort(
     (a, b) => dayjs(a).valueOf() - dayjs(b).valueOf()
   );
@@ -89,7 +90,6 @@ export const NewsFeed = () => {
       ) : (
         <div className="max-h-[520px] overflow-y-auto space-y-8 pr-1">
           {sortedDates.map((date) => {
-            // Sort events of the day by time ascending
             const dailyEvents = groupedByDate[date].sort(
               (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()
             );
@@ -106,8 +106,11 @@ export const NewsFeed = () => {
                       key={idx}
                       className="flex flex-wrap items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-md hover:bg-gray-100 transition-all duration-200"
                     >
-                      {/* Left: Country + Title */}
-                      <div className="flex items-center gap-3 min-w-[40%]">
+                      {/* Left: Time + Country + Title */}
+                      <div className="flex items-center gap-3 min-w-[45%]">
+                        <span className="text-xs font-semibold text-gray-700 w-12 text-right">
+                          {dayjs(ev.date).format("HH:mm")}
+                        </span>
                         <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
                           {ev.country}
                         </span>
@@ -116,17 +119,18 @@ export const NewsFeed = () => {
                         </span>
                       </div>
 
-                      {/* Right: Details */}
+                      {/* Right: Impact + Values */}
                       <div className="flex items-center gap-4 text-xs font-medium text-gray-600">
                         <span
-                          className={`px-2 py-0.5 rounded-md flex ${getImpactColor(
+                          className={`px-2 py-0.5 rounded-md flex items-center ${getImpactColor(
                             ev.impact
                           )}`}
                         >
-                          {getImpactIcon(ev.impact)}{ev.impact || "-"}
+                          {getImpactIcon(ev.impact)}
+                          {ev.impact || "-"}
                         </span>
-                        <span className="w-12 text-center text-gray-700">
-                          {dayjs(ev.date).format("HH:mm")}
+                        <span className="w-14 text-center text-gray-700">
+                          {ev.actual || "-"}
                         </span>
                         <span className="w-14 text-center text-gray-500">
                           {ev.forecast || "-"}
