@@ -85,3 +85,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+@keyframes glowRing {
+  0% { box-shadow: 0 0 0px rgba(91, 124, 255, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(91, 124, 255, 0.8); }
+  100% { box-shadow: 0 0 0px rgba(91, 124, 255, 0.3); }
+}
+
+@keyframes flashPulse {
+  0%, 100% { background-color: rgba(255,255,255,0); }
+  50% { background-color: rgba(255, 0, 0, 0.12); }
+}
+
+@keyframes slideDownBanner {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-glowRing {
+  animation: glowRing 1.8s infinite ease-in-out;
+}
+
+.animate-flashPulse {
+  animation: flashPulse 1.2s ease-in-out 4;
+}
+
+.animate-slideDown {
+  animation: slideDownBanner 0.35s ease-out;
+}
