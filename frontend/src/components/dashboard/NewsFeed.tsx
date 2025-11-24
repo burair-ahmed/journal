@@ -297,8 +297,7 @@ export const NewsFeed = () => {
     isNext
       ? "relative border-transparent bg-white shadow-md animate-glowRing before:absolute before:inset-[-2px] before:rounded-xl before:bg-gradient-to-r before:from-[#7C3AED] before:to-[#DB2777] before:-z-10"
       : "border-gray-200 hover:shadow-md hover:bg-gray-100"
-  }
-`}
+  }`}
                     >
                       {/* Arrow Indicator */}
                       {/* {isNext && (
