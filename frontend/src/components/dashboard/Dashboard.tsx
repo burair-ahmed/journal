@@ -20,6 +20,7 @@ import { UserProfile } from "./UserProfile";
 import { TradesTable } from "./TradesTable";
 import { WinLossSymbolDistribution } from "./widgets/WinLossSymbolDistribution";
 import { NewsFeed } from "./NewsFeed";
+import { ExportReport } from "./ExportReport";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
@@ -86,6 +87,8 @@ const DashboardContent = () => {
 
         case "insights":
         return <NewsFeed />;
+        case "reports":
+        return <ExportReport/>
       default:
         return (
           <div className="text-center text-white mt-20">

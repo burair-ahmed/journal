@@ -21,6 +21,10 @@ import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import html2canvas from "html2canvas";
+import { useRef, useState } from "react";
+import { ExportReport } from "@/components/dashboard/ExportReport";
+import { Loader2 } from "lucide-react";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -31,6 +35,112 @@ interface TradesTableProps {
 
 export const TradesTable = ({ accountId }: TradesTableProps) => {
   const { trades, isLoading } = useFilteredTrades(accountId);
+
+  // --- Full History Export Handlers ---
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportFullCSV = () => {
+    if (!trades || trades.length === 0) return;
+
+    const headers = [
+      "Ticket",
+      "Symbol",
+      "Type",
+      "Open Time",
+      "Open Price",
+      "Close Time",
+      "Close Price",
+      "Volume",
+      "Profit",
+      "Commission",
+      "Swap",
+      "Reason",
+    ];
+
+    const rows = trades.map((t: any) => [
+      t.ticket,
+      t.symbol,
+      t.type === 0 ? "Buy" : t.type === 1 ? "Sell" : t.type,
+      t.open_time,
+      t.open_price,
+      t.close_time,
+      t.close_price,
+      t.volume,
+      t.profit,
+      t.commission,
+      t.swap,
+      t.close_reason,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `full_history_${accountId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportFullPDF = async () => {
+    if (!reportRef.current || !trades) return;
+    setExporting(true);
+
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+
+      const doc = new jsPDF("p", "mm", "a4");
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = doc.internal.pageSize.getHeight();
+      
+      const imgProps = doc.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      doc.addImage(imgData, "PNG", 0, 0, pdfWidth, imgHeight);
+
+      let startY = imgHeight + 10;
+      if (startY > pdfHeight - 20) {
+        doc.addPage();
+        startY = 20;
+      } else {
+        doc.text("Detailed Trade List", 14, startY);
+        startY += 10;
+      }
+
+      const tableData = trades.map((t: any) => [
+        t.ticket,
+        t.symbol,
+        t.type === 0 ? "Buy" : "Sell",
+        dayjs(t.close_time).format("YYYY-MM-DD HH:mm"),
+        t.volume,
+        Number(t.profit).toFixed(2),
+      ]);
+
+      autoTable(doc, {
+        startY: startY,
+        head: [["Ticket", "Symbol", "Type", "Close Time", "Vol", "Profit"]],
+        body: tableData,
+        theme: "grid",
+        headStyles: { fillColor: [50, 50, 50] },
+        styles: { fontSize: 10 },
+      });
+
+      doc.save(`full_report_${accountId}.pdf`);
+    } catch (err) {
+      console.error("Export failed", err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleExportCSV = (trade: any) => {
     const headers = [
@@ -155,6 +265,42 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   return (
     <Card className="p-4 rounded-2xl border border-[#E5E7EB] bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="flex justify-end mb-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" disabled={exporting}>
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export History
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2">
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start gap-2"
+                  onClick={handleExportFullPDF}
+                >
+                  <FileText className="h-4 w-4" />
+                  PDF Report
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start gap-2"
+                  onClick={handleExportFullCSV}
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  CSV Data
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+      </div>
       <div className="overflow-x-auto rounded-xl border border-[#E5E7EB]/60">
         <table className="min-w-full text-sm table-fixed">
           <thead className="bg-gradient-to-r from-[#741052]/10 via-[#D946EF]/10 to-[#DB2777]/10 text-[#1E1E1E] font-semibold uppercase tracking-wide">
@@ -331,6 +477,8 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
           </tbody>
         </table>
       </div>
+
+      <ExportReport ref={reportRef} accountId={accountId} />
     </Card>
   );
 };
