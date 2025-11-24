@@ -60,10 +60,10 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="fixed top-0 left-0 w-64 h-screen bg-gradient-to-b from-[#0B0D29] to-[#17193C] text-white flex flex-col shadow-xl z-40">
+    <aside className="fixed top-0 left-0 w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shadow-xl z-40">
       {/* Logo */}
       <div className="p-6 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+        <div className="w-8 h-8 rounded-lg bg-brand-gradient flex items-center justify-center text-white font-bold text-sm">
           T
         </div>
         <span className="text-xl font-bold tracking-wide">Tradlyn</span>
@@ -71,7 +71,7 @@ export const Sidebar = () => {
 
       {/* Add Trade & Add Account */}
       <div className="px-4 mb-6 space-y-3">
-        <Button className="w-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white font-semibold rounded-lg">
+        <Button className="w-full bg-brand-gradient text-white font-semibold rounded-lg hover:opacity-90 transition-opacity">
           <Plus className="h-4 w-4 mr-2" />
           Add Trade
         </Button>
@@ -93,14 +93,14 @@ export const Sidebar = () => {
               onClick={() => setActiveView(item.view as any)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
                 activeView === item.view
-                  ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md"
+                  ? "bg-brand-gradient text-white shadow-md"
                   : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.label}</span>
               {item.badge && (
-                <span className="ml-auto text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-[10px] font-semibold bg-brand-gradient px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
               )}
@@ -112,13 +112,13 @@ export const Sidebar = () => {
       {/* Bottom Card */}
     {/* Bottom Card */}
 <div className="p-4">
-  <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl p-4 text-white shadow-lg">
+  <div className="flex items-center justify-between bg-brand-gradient rounded-xl p-4 text-white shadow-lg">
     {/* Left Side: Avatar + Info */}
     <div className="flex items-center min-w-0"> {/* min-w-0 ensures truncate works */}
       <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
         <Avatar className="w-full h-full rounded-full">
           <AvatarImage src={preview || undefined} alt="User Avatar" />
-          <AvatarFallback className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-xl">
+          <AvatarFallback className="rounded-full bg-brand-gradient text-white text-xl">
             {user.name?.charAt(0) || user.email.charAt(0)}
           </AvatarFallback>
         </Avatar>
@@ -143,7 +143,7 @@ export const Sidebar = () => {
       <PopoverContent
         side="top"
         align="end"
-        className="w-40 bg-[#17193C] text-white border border-white/10 shadow-lg rounded-xl p-2"
+        className="w-40 bg-sidebar border border-sidebar-border text-sidebar-foreground shadow-lg rounded-xl p-2"
       >
         <button
           onClick={() => setActiveView("profile")}

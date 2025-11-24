@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Edit2, X } from "lucide-react";
 import clsx from "clsx";
 
 export const UserProfile: React.FC = () => {
@@ -26,6 +26,8 @@ export const UserProfile: React.FC = () => {
   });
   const [preview, setPreview] = useState<string | null>(user?.profile_picture || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
@@ -40,13 +42,26 @@ export const UserProfile: React.FC = () => {
       bio: user?.bio ?? "",
     });
     setPreview(user?.profile_picture || null);
+    setIsEditMode(false);
+    setHasChanges(false);
   }, [user]);
+
+  // Detect changes
+  useEffect(() => {
+    if (!user) return;
+    const changed =
+      formData.name !== (user.name ?? "") ||
+      formData.username !== (user.username ?? "") ||
+      formData.phone !== (user.phone ?? "") ||
+      formData.bio !== (user.bio ?? "");
+    setHasChanges(changed);
+  }, [formData, user]);
 
   if (loading) {
     return (
       <div className="p-8 max-w-4xl mx-auto space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-44 rounded-3xl bg-gradient-to-r from-[#0B0D29]/30 via-[#17193C]/25 to-[#0B0D29]/30 animate-pulse" />
+          <Skeleton className="h-44 rounded-3xl bg-sidebar/30 animate-pulse" />
           <div className="md:col-span-2 space-y-4">
             <Skeleton className="h-8 w-2/3 rounded-2xl animate-pulse" />
             <Skeleton className="h-12 rounded-2xl animate-pulse" />
@@ -58,7 +73,7 @@ export const UserProfile: React.FC = () => {
     );
   }
 
-  if (!user) return <div className="p-8 text-white/70">No user found.</div>;
+  if (!user) return <div className="p-8 text-muted-foreground">No user found.</div>;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -75,6 +90,8 @@ export const UserProfile: React.FC = () => {
       if (error) throw error;
       setUser((prev) => (prev ? { ...prev, ...data } : prev));
       toast({ title: "Profile updated", description: "Profile changes saved." });
+      setIsEditMode(false);
+      setHasChanges(false);
     } catch (err: any) {
       toast({ title: "Error updating", description: err.message, variant: "destructive" });
     } finally {
@@ -101,6 +118,17 @@ export const UserProfile: React.FC = () => {
     }
   };
 
+  const handleCancel = () => {
+    setFormData({
+      name: user?.name ?? "",
+      username: user?.username ?? "",
+      phone: user?.phone ?? "",
+      bio: user?.bio ?? "",
+    });
+    setIsEditMode(false);
+    setHasChanges(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -108,12 +136,24 @@ export const UserProfile: React.FC = () => {
       transition={{ duration: 0.45, ease: "easeOut" }}
       className="p-6 w-full flex justify-center"
     >
-      <Card className="max-w-5xl w-full bg-[#14163866] backdrop-blur-[12px] border border-[#141638]/30
-  shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(255,255,255,0.05),inset_0_0_32px_16px_#141638]
+      <Card className="max-w-5xl w-full bg-sidebar/40 backdrop-blur-[12px] border border-sidebar-border/30
+  shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(255,255,255,0.05)]
   before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[1px]
   before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent)]
   after:content-[''] after:absolute after:top-0 after:left-0 after:w-[1px] after:h-full
   after:bg-[linear-gradient(180deg,rgba(255,255,255,0.4),transparent,rgba(255,255,255,0.1))] p-6 md:p-10 grid grid-cols-1 md:grid-cols-3 gap-10">
+        {/* Edit Button */}
+        {!isEditMode && (
+          <motion.button
+            onClick={() => setIsEditMode(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="absolute top-6 right-6 p-2 rounded-full bg-brand-gradient text-white shadow-lg hover:brightness-110 transition-all"
+            aria-label="Edit profile"
+          >
+            <Edit2 className="w-5 h-5" />
+          </motion.button>
+        )}
         {/* Avatar Section */}
         <motion.div
           style={{ rotateX, rotateY }}
@@ -137,12 +177,12 @@ export const UserProfile: React.FC = () => {
             aria-label="Upload profile picture"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.98 }}
-            className="relative p-[2px] rounded-full bg-gradient-to-br from-[#7C3AED] via-[#DB2777] to-[#7C3AED] shadow-[0_6px_30px_rgba(124,58,237,0.25)]"
+            className="relative p-[2px] rounded-full bg-brand-gradient shadow-[0_6px_30px_rgba(217,70,239,0.25)]"
           >
-            <div className="rounded-full w-40 h-40 bg-gradient-to-br from-[#0B0D29] to-[#17193C] overflow-hidden border border-[rgba(255,255,255,0.15)]">
+            <div className="rounded-full w-40 h-40 bg-sidebar overflow-hidden border border-sidebar-border">
               <Avatar className="w-full h-full rounded-full">
                 <AvatarImage src={preview || undefined} alt="User Avatar" />
-                <AvatarFallback className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-3xl">
+                <AvatarFallback className="rounded-full bg-brand-gradient text-white text-3xl">
                   {user.name?.charAt(0) || user.email.charAt(0)}
                 </AvatarFallback>
               </Avatar>
@@ -155,9 +195,9 @@ export const UserProfile: React.FC = () => {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
           <div className="text-center">
-            <h3 className="text-white font-semibold text-lg">{user.name || "Unnamed User"}</h3>
-            <p className="text-white/70 text-sm">@{user.username || "username"}</p>
-            <p className="text-white/50 text-xs mt-1">
+            <h3 className="text-sidebar-foreground font-semibold text-lg">{user.name || "Unnamed User"}</h3>
+            <p className="text-sidebar-foreground/70 text-sm">@{user.username || "username"}</p>
+            <p className="text-sidebar-foreground/50 text-xs mt-1">
               Joined {new Date(user.created_at || "").toLocaleDateString()}
             </p>
           </div>
@@ -177,18 +217,18 @@ export const UserProfile: React.FC = () => {
                 whileHover={{ y: -3 }}
                 className="group"
               >
-                <label htmlFor={field.id} className="block text-xs text-white/70 mb-2">
+                <label htmlFor={field.id} className="block text-xs text-sidebar-foreground/70 mb-2">
                   {field.label}
                 </label>
                 <Input
                   id={field.id}
                   name={field.id}
                   value={field.value}
-                  disabled={field.disabled}
+                  disabled={field.disabled || !isEditMode}
                   onChange={handleInputChange}
                   className={clsx(
-                    "w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.2)] text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-[#7C3AED]/40 transition-all",
-                    "group-hover:bg-[rgba(255,255,255,0.1)]"
+                    "w-full bg-sidebar-accent/50 border border-sidebar-border text-sidebar-foreground rounded-2xl px-4 py-3 focus:ring-2 focus:ring-primary/40 transition-all",
+                    "group-hover:bg-sidebar-accent"
                   )}
                 />
               </motion.div>
@@ -196,7 +236,7 @@ export const UserProfile: React.FC = () => {
           </div>
 
           <motion.div whileHover={{ y: -3 }}>
-            <label htmlFor="bio" className="block text-xs text-white/70 mb-2">
+            <label htmlFor="bio" className="block text-xs text-sidebar-foreground/70 mb-2">
               Bio
             </label>
             <Textarea
@@ -204,27 +244,38 @@ export const UserProfile: React.FC = () => {
               name="bio"
               value={formData.bio}
               onChange={handleInputChange}
+              disabled={!isEditMode}
               placeholder="Tell us something about you..."
-              className="min-h-[100px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.2)] text-white rounded-2xl px-4 py-3 focus:ring-2 focus:ring-[#DB2777]/40 transition-all hover:bg-[rgba(255,255,255,0.1)]"
+              className="min-h-[100px] bg-sidebar-accent/50 border border-sidebar-border text-sidebar-foreground rounded-2xl px-4 py-3 focus:ring-2 focus:ring-accent/40 transition-all hover:bg-sidebar-accent"
             />
           </motion.div>
 
-          <div className="flex items-center justify-between pt-4">
-            {/* <p className="text-white/60 text-sm">Profile settings are private.</p> */}
-
-            <Button
-              onClick={handleProfileUpdate}
-              disabled={saving}
-              className={clsx(
-                "relative overflow-hidden rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7C3AED]/30 transition-all",
-                "bg-gradient-to-r from-[#7C3AED] to-[#DB2777] hover:brightness-110",
-                saving && "opacity-70 cursor-not-allowed"
-              )}
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {saving ? "Saving..." : "Save Changes"}
-              <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.25)_50%,rgba(255,255,255,0)_100%)] animate-[shimmer_2.5s_infinite] bg-[length:200%_100%]" />
-            </Button>
+          <div className="flex items-center justify-end gap-3 pt-4">
+            {isEditMode && (
+              <>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  className="rounded-full px-6 py-3 text-sm font-semibold border-sidebar-border text-[#2d0620] hover:bg-sidebar-accent transition-all"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleProfileUpdate}
+                  disabled={saving || !hasChanges}
+                  className={clsx(
+                    "relative overflow-hidden rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/30 transition-all",
+                    "bg-brand-gradient hover:brightness-110",
+                    (saving || !hasChanges) && "opacity-70 cursor-not-allowed"
+                  )}
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {saving ? "Saving..." : "Save Changes"}
+                  <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.25)_50%,rgba(255,255,255,0)_100%)] animate-[shimmer_2.5s_infinite] bg-[length:200%_100%]" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Card>

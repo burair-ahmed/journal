@@ -249,7 +249,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   if (isLoading) {
     return (
-      <Card className="p-4 border border-dashed rounded-2xl bg-gradient-to-r from-[#FDF4FF] to-[#FCE7F3] text-center text-gray-500 font-medium animate-pulse">
+      <Card className="p-4 border border-dashed rounded-2xl bg-secondary/20 text-center text-muted-foreground font-medium animate-pulse">
         Loading trades...
       </Card>
     );
@@ -257,7 +257,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   if (!trades || trades.length === 0) {
     return (
-      <Card className="p-4 border border-dashed rounded-2xl bg-gradient-to-r from-[#FDF4FF] to-[#FCE7F3] text-center text-gray-500 font-medium">
+      <Card className="p-4 border border-dashed rounded-2xl bg-secondary/20 text-center text-muted-foreground font-medium">
         No trades found for this account.
       </Card>
     );
@@ -301,9 +301,9 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
             </PopoverContent>
           </Popover>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-[#E5E7EB]/60">
+      <div className="overflow-x-auto rounded-xl border border-border/60">
         <table className="min-w-full text-sm table-fixed">
-          <thead className="bg-gradient-to-r from-[#741052]/10 via-[#D946EF]/10 to-[#DB2777]/10 text-[#1E1E1E] font-semibold uppercase tracking-wide">
+          <thead className="bg-secondary/50 text-foreground font-semibold uppercase tracking-wide">
             <tr>
               <th className="px-5 py-3 text-left w-[10%]">Symbol</th>
               <th className="px-5 py-3 text-left w-[15%]">Open</th>
@@ -356,11 +356,11 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
               return (
                 <tr
                   key={trade.id ?? trade.position_id}
-                  className="group hover:bg-gradient-to-r hover:from-[#FDF4FF] hover:to-[#FCE7F3] transition-all duration-300"
+                  className="group hover:bg-secondary/30 transition-all duration-300"
                 >
                   {/* Symbol */}
-                  <td className="px-5 py-3 font-semibold text-[#1E1E1E] align-top">
-                    <span className="bg-gradient-to-r from-[#741052] via-[#D946EF] to-[#DB2777] bg-clip-text text-transparent">
+                  <td className="px-5 py-3 font-semibold text-foreground align-top">
+                    <span className="text-brand-gradient">
                       {trade.symbol}
                     </span>
                   </td>
@@ -438,13 +438,13 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                   {/* Actions */}
                   <td className="px-5 py-3 text-right align-top">
                     <div className="flex items-center justify-end gap-3">
-                      <Edit3 className="h-4 w-4 text-gray-500 hover:text-[#741052] transition-colors cursor-pointer" />
-                      <BarChart3 className="h-4 w-4 text-gray-500 hover:text-[#7C3AED] transition-colors cursor-pointer" />
-                      <LineChart className="h-4 w-4 text-gray-500 hover:text-[#DB2777] transition-colors cursor-pointer" />
+                      <Edit3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      <BarChart3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      <LineChart className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                       
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Download className="h-4 w-4 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer" />
+                          <Download className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                         </PopoverTrigger>
                         <PopoverContent className="w-40 p-2">
                           <div className="flex flex-col gap-1">

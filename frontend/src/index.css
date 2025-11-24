@@ -16,48 +16,48 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    /* Primary - Purple/Blue from Tradezella */
-    --primary: 248 95% 67%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary - Fuchsia/Pink from TradesTable Gradient */
+    --primary: 300 85% 60%; /* #D946EF */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Light gray for secondary elements */
-    --secondary: 240 4% 96%;
-    --secondary-foreground: 240 6% 10%;
+    /* Secondary - Light gray/pink tint */
+    --secondary: 300 20% 96%;
+    --secondary-foreground: 320 40% 10%;
 
-    /* Muted colors for subtle elements */
-    --muted: 240 4% 96%;
-    --muted-foreground: 240 3% 46%;
+    /* Muted colors */
+    --muted: 300 10% 96%;
+    --muted-foreground: 300 5% 40%;
 
-    /* Accent - Same as primary for consistency */
-    --accent: 248 95% 67%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent - Pink 600 */
+    --accent: 330 70% 50%; /* #DB2777 */
+    --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Red for losses */
+    /* Destructive - Red */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     /* Trading-specific colors */
-    --profit: 120 60% 45%;
-    --profit-foreground: 0 0% 98%;
+    --profit: 142 76% 36%; /* Green 600 */
+    --profit-foreground: 0 0% 100%;
     --loss: 0 84% 60%;
-    --loss-foreground: 0 0% 98%;
+    --loss-foreground: 0 0% 100%;
     --neutral: 240 3% 46%;
     --neutral-foreground: 0 0% 98%;
 
     /* Border and input colors */
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 248 95% 67%;
+    --border: 300 10% 90%;
+    --input: 300 10% 90%;
+    --ring: 300 85% 60%;
 
-    /* Sidebar - Dark purple like Tradezella */
-    --sidebar: 248 95% 17%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 248 95% 67%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 248 95% 25%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 248 95% 15%;
-    --sidebar-ring: 248 95% 67%;
+    /* Sidebar - Deep Plum/Magenta */
+    --sidebar: 320 75% 10%; /* Very dark pink/purple */
+    --sidebar-foreground: 300 10% 96%;
+    --sidebar-primary: 300 85% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 320 75% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 320 75% 15%;
+    --sidebar-ring: 300 85% 60%;
 
     /* Enhanced radius for modern look */
     --radius: 0.75rem;
@@ -72,7 +72,18 @@
   
   .widget-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px -5px rgba(217, 70, 239, 0.15); /* Pink shadow */
+  }
+
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, #741052 0%, #D946EF 50%, #DB2777 100%);
+  }
+  
+  .text-brand-gradient {
+    background: linear-gradient(135deg, #741052 0%, #D946EF 50%, #DB2777 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 

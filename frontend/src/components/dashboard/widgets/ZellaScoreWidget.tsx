@@ -48,7 +48,7 @@ export const ZellaScoreWidget = () => {
 
   if (isLoading) {
     return (
-      <Card className="p-4 border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 animate-pulse">
+      <Card className="p-4 border border-primary/20 bg-primary/5 animate-pulse">
         <div className="text-sm text-muted-foreground">Loading Zella Score...</div>
       </Card>
     );
@@ -76,14 +76,14 @@ export const ZellaScoreWidget = () => {
   const layers = [0.25, 0.5, 0.75, 1];
 
   return (
-    <Card className="relative p-4 border bg-white shadow-sm rounded-xl border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+    <Card className="relative p-4 border bg-card shadow-sm rounded-xl border-primary/20 bg-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">Zella Score</span>
           <Info className="h-4 w-4 text-muted-foreground" />
         </div>
-        <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           BETA
         </span>
       </div>
@@ -101,7 +101,7 @@ export const ZellaScoreWidget = () => {
                 key={i}
                 points={`${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y}`}
                 fill="none"
-                stroke="#a78bfa"
+                stroke="hsl(var(--primary))"
                 strokeOpacity={0.15}
               />
             );
@@ -110,16 +110,16 @@ export const ZellaScoreWidget = () => {
           {/* Filled Area */}
           <polygon
             points={polygonPoints}
-            fill="url(#purpleGradient)"
-            stroke="#8b5cf6"
+            fill="url(#primaryGradient)"
+            stroke="hsl(var(--primary))"
             strokeWidth="1"
             opacity="0.7"
           />
 
           <defs>
-            <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#c4b5fd" />
-              <stop offset="100%" stopColor="#a78bfa" />
+            <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.2" />
             </linearGradient>
           </defs>
         </svg>
@@ -139,7 +139,7 @@ export const ZellaScoreWidget = () => {
       {/* Score */}
       <div className="text-center">
         <div className="text-sm text-muted-foreground">Your Zella Score</div>
-        <div className="text-2xl font-bold text-purple-600">{score.toFixed(2)}</div>
+        <div className="text-2xl font-bold text-primary">{score.toFixed(2)}</div>
       </div>
     </Card>
   );

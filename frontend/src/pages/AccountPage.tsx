@@ -230,7 +230,7 @@ export const AccountPage = () => {
               <li
                 key={s.date}
                 className={`p-2 rounded ${
-                  s.pnl >= 0 ? "bg-green-100" : "bg-red-100"
+                  s.pnl >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"
                 }`}
               >
                 <div className="text-sm">{format(new Date(s.date), "MMM d")}</div>
@@ -283,7 +283,7 @@ export const AccountPage = () => {
                   <td className="p-2">{t.volume}</td>
                   <td
                     className={`p-2 ${
-                      t.profit >= 0 ? "text-green-600" : "text-red-600"
+                      t.profit >= 0 ? "text-profit" : "text-loss"
                     }`}
                   >
                     {t.profit.toFixed(2)}

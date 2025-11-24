@@ -72,9 +72,9 @@ const WeeklySummaryWidget = ({
             <div
               className={`font-semibold ${
                 week.pnl > 0
-                  ? "text-green-600"
+                  ? "text-profit"
                   : week.pnl < 0
-                  ? "text-red-600"
+                  ? "text-loss"
                   : "text-muted-foreground"
               }`}
             >
@@ -104,9 +104,9 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
   const getDayClass = (day: CalendarDay) => {
     let baseClass =
       "min-h-[100px] p-2 border border-border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all hover:shadow-sm";
-    if (day.pnl > 0) baseClass += " bg-green-100 text-green-800";
-    else if (day.pnl < 0) baseClass += " bg-red-100 text-red-800";
-    else baseClass += " bg-gray-50";
+    if (day.pnl > 0) baseClass += " bg-profit/10 text-profit";
+    else if (day.pnl < 0) baseClass += " bg-loss/10 text-loss";
+    else baseClass += " bg-secondary/20";
     return baseClass;
   };
 
@@ -199,7 +199,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div
             key={day}
-            className="text-center text-sm font-medium py-2 border-b-2 border-blue-400"
+            className="text-center text-sm font-medium py-2 border-b-2 border-primary"
           >
             {day}
           </div>
@@ -263,7 +263,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                             <span className="text-muted-foreground">
                               Winning Trades
                             </span>
-                            <span className="text-green-600 font-medium">
+                            <span className="text-profit font-medium">
                               {info.winningTrades}
                             </span>
                           </div>
@@ -272,7 +272,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                             <span className="text-muted-foreground">
                               Losing Trades
                             </span>
-                            <span className="text-red-600 font-medium">
+                            <span className="text-loss font-medium">
                               {info.losingTrades}
                             </span>
                           </div>
@@ -281,7 +281,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                             <span className="text-muted-foreground">
                               Biggest Win
                             </span>
-                            <span className="text-green-600 font-medium">
+                            <span className="text-profit font-medium">
                               {formatCurrency(info.biggestWin)}
                             </span>
                           </div>
@@ -290,7 +290,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                             <span className="text-muted-foreground">
                               Biggest Loss
                             </span>
-                            <span className="text-red-600 font-medium">
+                            <span className="text-loss font-medium">
                               {formatCurrency(info.biggestLoss)}
                             </span>
                           </div>

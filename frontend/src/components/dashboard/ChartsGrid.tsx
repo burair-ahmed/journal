@@ -50,7 +50,7 @@ export const ChartsGrid = ({ accountId }: { accountId?: number }) => {
     counts[t.symbol] = (counts[t.symbol] || 0) + 1;
   });
   const totalTrades = trades.length;
-  const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
+  const colors = ["hsl(var(--primary))", "hsl(var(--accent))", "#10b981", "#f59e0b", "#ef4444"];
   const sorted = Object.entries(counts)
     .map(([symbol, count]) => ({
       name: symbol,
@@ -80,7 +80,7 @@ export const ChartsGrid = ({ accountId }: { accountId?: number }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Asset Distribution */}
-      <Card className="p-6 backdrop-blur-md bg-white/70 border border-gray-200 shadow-md">
+      <Card className="p-6 backdrop-blur-md bg-card/70 border border-border shadow-md">
         <div className="flex items-center gap-2 mb-6">
           <PieChartIcon className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Asset Distribution</h3>
@@ -106,7 +106,7 @@ export const ChartsGrid = ({ accountId }: { accountId?: number }) => {
       </Card>
 
       {/* PnL by Asset */}
-      <Card className="p-6 backdrop-blur-md bg-white/70 border border-gray-200 shadow-md">
+      <Card className="p-6 backdrop-blur-md bg-card/70 border border-border shadow-md">
         <div className="flex items-center gap-2 mb-6">
           <BarChart3 className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">P&L by Asset</h3>
@@ -134,7 +134,7 @@ export const ChartsGrid = ({ accountId }: { accountId?: number }) => {
       </Card>
 
       {/* Equity Curve */}
-      <Card className="p-6 lg:col-span-2 backdrop-blur-md bg-white/70 border border-gray-200 shadow-md">
+      <Card className="p-6 lg:col-span-2 backdrop-blur-md bg-card/70 border border-border shadow-md">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Equity Curve</h3>

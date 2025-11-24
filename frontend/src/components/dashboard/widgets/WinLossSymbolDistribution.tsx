@@ -35,7 +35,9 @@ useEffect(() => {
   }));
 
 const COLORS = [
-  "#4F46E5", // indigo
+  "#D946EF", // primary (fuchsia)
+  "#DB2777", // accent (pink)
+  "#741052", // deep plum
   "#10B981", // emerald
   "#F59E0B", // amber
   "#EF4444", // red
@@ -114,8 +116,8 @@ const COLORS = [
 
 
   return (
-    <Card className="p-4 bg-white border border-gray-200 shadow-sm rounded-2xl h-[500px]">
-      <div className="text-sm font-medium text-gray-600 mb-3">
+    <Card className="p-4 bg-card border border-border shadow-sm rounded-2xl h-[500px]">
+      <div className="text-sm font-medium text-foreground mb-3">
         Win / Loss Distribution by Symbol
       </div>
 

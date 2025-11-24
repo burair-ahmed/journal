@@ -181,7 +181,7 @@ export const NewsFeed = () => {
         {/* SHOW CURRENT NEWS BUTTON */}
         <button
           onClick={scrollToUpcoming}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white hover:bg-indigo-700 transition shadow-sm"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-gradient text-white hover:opacity-90 transition shadow-sm"
         >
           Show Current Upcoming News
         </button>
@@ -189,7 +189,7 @@ export const NewsFeed = () => {
       {/* NEXT EVENT STICKY BANNER */}
       {nextEventId && (
         <div className="sticky top-12 mb-3">
-          <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#DB2777] text-white text-xs font-semibold shadow-md flex items-center gap-2 animate-slideDown">
+          <div className="px-3 py-2 rounded-xl bg-brand-gradient text-white text-xs font-semibold shadow-md flex items-center gap-2 animate-slideDown">
             <Zap className="w-3 h-3 text-white" />
             Next Event Incoming
           </div>
@@ -216,8 +216,8 @@ export const NewsFeed = () => {
                 }
                 className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
                   selectedCurrencies.includes(c)
-                    ? "text-white border-transparent bg-gradient-to-r from-[#7C3AED] to-[#DB2777] shadow-sm"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    ? "text-white border-transparent bg-brand-gradient shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:bg-secondary"
                 }`}
               >
                 {c}
@@ -242,8 +242,8 @@ export const NewsFeed = () => {
                 }
                 className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
                   selectedImpacts.includes(i)
-                    ? "text-white border-transparent bg-gradient-to-r from-[#7C3AED] to-[#DB2777] shadow-sm"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    ? "text-white border-transparent bg-brand-gradient shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:bg-secondary"
                 }`}
               >
                 {i}
@@ -295,8 +295,8 @@ export const NewsFeed = () => {
                       className={`relative flex flex-wrap items-center justify-between px-3 py-2.5 bg-gray-50 border rounded-xl transition-all duration-200
   ${
     isNext
-      ? "relative border-transparent bg-white shadow-md animate-glowRing before:absolute before:inset-[-2px] before:rounded-xl before:bg-gradient-to-r before:from-[#7C3AED] before:to-[#DB2777] before:-z-10"
-      : "border-gray-200 hover:shadow-md hover:bg-gray-100"
+      ? "relative border-transparent bg-card shadow-md animate-glowRing before:absolute before:inset-[-2px] before:rounded-xl before:bg-brand-gradient before:-z-10"
+      : "border-border hover:shadow-md hover:bg-secondary/50"
   }`}
                     >
                       {/* Arrow Indicator */}
@@ -313,8 +313,8 @@ export const NewsFeed = () => {
                         <span
                           className="
     text-xs font-semibold 
-    text-[#6A21C8] 
-    bg-gradient-to-r from-[#7C3AED]/10 to-[#DB2777]/10 
+    text-primary 
+    bg-primary/10 
     px-2 py-0.5 rounded-md
   "
                         >

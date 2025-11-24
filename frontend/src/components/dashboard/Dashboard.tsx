@@ -91,11 +91,11 @@ const DashboardContent = () => {
         return <ExportReport/>
       default:
         return (
-          <div className="text-center text-white mt-20">
+          <div className="text-center text-foreground mt-20">
             <h1 className="text-2xl font-semibold mb-2 capitalize">
               {activeView}
             </h1>
-            <p className="text-black">This section is under development.</p>
+            <p className="text-muted-foreground">This section is under development.</p>
           </div>
         );
     }
