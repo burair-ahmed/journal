@@ -2,13 +2,30 @@ import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import { Brain, AlertCircle, CheckCircle } from "lucide-react";
 import dayjs from "dayjs";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface PsychologyReportsProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const PsychologyReports = ({ trades }: PsychologyReportsProps) => {
+export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
   const psychMetrics = useMemo(() => {
     // Discipline Score
     const tradesWithTPSL = trades.filter(t => t.tp_price && t.sl_price);

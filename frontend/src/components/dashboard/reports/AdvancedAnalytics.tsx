@@ -2,13 +2,30 @@ import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { TrendingUp, Target, Zap } from "lucide-react";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface AdvancedAnalyticsProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const AdvancedAnalytics = ({ trades }: AdvancedAnalyticsProps) => {
+export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
   const advanced = useMemo(() => {
     // Monte Carlo Simulation (simplified)
     const returns = trades.map(t => Number(t.profit));

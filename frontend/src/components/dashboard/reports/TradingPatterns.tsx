@@ -1,13 +1,30 @@
 import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import dayjs from "dayjs";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface TradingPatternsProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const TradingPatterns = ({ trades }: TradingPatternsProps) => {
+export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
   const patterns = useMemo(() => {
     // Symbol Performance
     const symbolStats: Record<string, { wins: number; losses: number; profit: number; count: number }> = {};

@@ -17,6 +17,11 @@ export type Trade = {
   commission: number;
   swap: number;
   comment: string;
+  tp_price?: number;
+  sl_price?: number;
+  tp?: number;
+  sl?: number;
+  close_reason?: string;
   mt5_raw?: any;
 };
 

@@ -2,14 +2,35 @@ import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { TrendingUp, TrendingDown, DollarSign, Target, Award, Calendar } from "lucide-react";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface ExecutiveSummaryProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const ExecutiveSummary = ({ trades, accountId }: ExecutiveSummaryProps) => {
+export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
   const stats = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        totalProfit: 0,
+        grossProfit: 0,
+        grossLoss: 0,
+        winRate: 0,
+        profitFactor: 0,
+        avgWin: 0,
+        avgLoss: 0,
+        monthTrades: 0,
+        monthProfit: 0,
+        ytdTrades: 0,
+        ytdProfit: 0,
+      };
+    }
+
     const totalTrades = trades.length;
     const winningTrades = trades.filter((t) => Number(t.profit) > 0);
     const losingTrades = trades.filter((t) => Number(t.profit) < 0);
@@ -50,6 +71,22 @@ export const ExecutiveSummary = ({ trades, accountId }: ExecutiveSummaryProps) =
       ytdProfit,
     };
   }, [trades, accountId]);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
 
   const MetricCard = ({ icon: Icon, label, value, subValue, trend }: any) => (
     <Card className="p-6">

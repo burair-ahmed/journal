@@ -1,13 +1,30 @@
 import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import dayjs from "dayjs";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface PerformanceAnalyticsProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const PerformanceAnalytics = ({ trades }: PerformanceAnalyticsProps) => {
+export const PerformanceAnalytics = ({ accountId }: PerformanceAnalyticsProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
   const analytics = useMemo(() => {
     // Monthly Performance
     const monthlyData: Record<string, { profit: number; trades: number; wins: number }> = {};

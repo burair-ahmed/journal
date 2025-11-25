@@ -1,12 +1,7 @@
-import { forwardRef, useState, useMemo } from "react";
-import { useFilteredTrades } from "@/hooks/useTrades";
-import { Card } from "@/components/ui/card";
+import { forwardRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download, TrendingUp, Shield, Brain, Calendar, Target, BarChart3, FileText } from "lucide-react";
-import dayjs from "dayjs";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 // Analytics Components
 import { PerformanceAnalytics } from "./reports/PerformanceAnalytics";
@@ -16,10 +11,7 @@ import { PsychologyReports } from "./reports/PsychologyReports";
 import { TaxCompliance } from "./reports/TaxCompliance";
 import { ExecutiveSummary } from "./reports/ExecutiveSummary";
 import { AdvancedAnalytics } from "./reports/AdvancedAnalytics";
-import { AccountProvider, useAccountContext } from "@/contexts/AccountContext";
-
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
+import { useAccountContext } from "@/contexts/AccountContext";
 
 interface ExportReportProps {
   accountId?: number;
@@ -27,26 +19,9 @@ interface ExportReportProps {
 
 export const ExportReport = forwardRef<HTMLDivElement, ExportReportProps>(
   ({ accountId }, ref) => {
-    const { trades = [], isLoading } = useFilteredTrades(accountId);
     const [activeTab, setActiveTab] = useState("executive");
-const { selectedAccountId } = useAccountContext();
-    if (isLoading) {
-      return (
-        <Card className="p-8">
-          <div className="text-center text-muted-foreground">Loading reports...</div>
-        </Card>
-      );
-    }
-
-    if (!trades || trades.length === 0) {
-      return (
-        <Card className="p-8">
-          <div className="text-center text-muted-foreground">
-            No trades available to generate reports.
-          </div>
-        </Card>
-      );
-    }
+    const { selectedAccountId } = useAccountContext();
+    const effectiveAccountId = selectedAccountId ?? accountId;
 
     return (
       <div ref={ref} className="space-y-6">
@@ -55,7 +30,7 @@ const { selectedAccountId } = useAccountContext();
           <div>
             <h1 className="text-3xl font-bold text-foreground">Trading Reports</h1>
             <p className="text-muted-foreground mt-1">
-              Comprehensive analytics and insights • {trades.length} trades analyzed
+              Comprehensive analytics and insights
             </p>
           </div>
           <Button className="gap-2">
@@ -98,31 +73,31 @@ const { selectedAccountId } = useAccountContext();
           </TabsList>
 
           <TabsContent value="executive" className="mt-6">
-            <ExecutiveSummary trades={trades} accountId={selectedAccountId?? undefined} />
+            <ExecutiveSummary accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="performance" className="mt-6">
-            <PerformanceAnalytics trades={trades} accountId={accountId} />
+            <PerformanceAnalytics accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="risk" className="mt-6">
-            <RiskManagement trades={trades} accountId={accountId} />
+            <RiskManagement accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="patterns" className="mt-6">
-            <TradingPatterns trades={trades} accountId={accountId} />
+            <TradingPatterns accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="psychology" className="mt-6">
-            <PsychologyReports trades={trades} accountId={accountId} />
+            <PsychologyReports accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="tax" className="mt-6">
-            <TaxCompliance trades={trades} accountId={accountId} />
+            <TaxCompliance accountId={effectiveAccountId} />
           </TabsContent>
 
           <TabsContent value="advanced" className="mt-6">
-            <AdvancedAnalytics trades={trades} accountId={accountId} />
+            <AdvancedAnalytics accountId={effectiveAccountId} />
           </TabsContent>
         </Tabs>
       </div>

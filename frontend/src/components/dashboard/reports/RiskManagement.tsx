@@ -1,13 +1,30 @@
 import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import { AlertTriangle, Shield, TrendingDown } from "lucide-react";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface RiskManagementProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const RiskManagement = ({ trades }: RiskManagementProps) => {
+export const RiskManagement = ({ accountId }: RiskManagementProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
   const riskMetrics = useMemo(() => {
     // Drawdown calculation
     let peak = 0;

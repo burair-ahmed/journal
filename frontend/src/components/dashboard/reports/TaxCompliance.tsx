@@ -3,13 +3,31 @@ import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { Download, FileText } from "lucide-react";
+import { useFilteredTrades } from "@/hooks/useTrades";
 
 interface TaxComplianceProps {
-  trades: any[];
   accountId?: number;
 }
 
-export const TaxCompliance = ({ trades }: TaxComplianceProps) => {
+export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
+  const { trades = [], isLoading } = useFilteredTrades(accountId);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
+
   const taxData = useMemo(() => {
     const currentYear = dayjs().year();
     
