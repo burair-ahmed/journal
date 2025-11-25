@@ -1,97 +1,53 @@
-import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
-import dayjs from "dayjs";
-import { TrendingUp, TrendingDown, DollarSign, Target, Award, Calendar } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { useFilteredTrades } from "@/hooks/useTrades";
+import { DollarSign, Target, Award, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+
+// Import analytics utilities
+import {
+  calculateKPIMetrics,
+  calculateYTDMetrics,
+  calculateMonthlyBreakdown,
+  calculateTradeDistribution,
+  calculateProfitFactor,
+  generateExecutiveSummary
+} from "@/lib/analytics/executiveSummary";
+
+// Import executive components
+import { KPICard } from "@/components/executive/KPICard";
+import { YTDPanel } from "@/components/executive/YTDPanel";
+import { MonthlyBreakdown } from "@/components/executive/MonthlyBreakdown";
+import { TradeDistribution } from "@/components/executive/TradeDistribution";
+import { ProfitFactorPanel } from "@/components/executive/ProfitFactorPanel";
+import { ExecutiveAISummary } from "@/components/executive/ExecutiveAISummary";
 
 interface ExecutiveSummaryProps {
   accountId?: number;
 }
 
-// Helper component for metric cards
-const MetricCard = ({ icon: Icon, label, value, subValue, trend, iconColor = "text-primary" }: any) => (
-  <Card className="p-6">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-          <div className={`p-2 rounded-md bg-secondary/50 ${iconColor}`}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <span className="font-medium">{label}</span>
-        </div>
-        <div className="text-2xl font-bold tracking-tight">{value}</div>
-        {subValue && <div className="text-sm text-muted-foreground mt-1 font-medium">{subValue}</div>}
-        {trend !== undefined && (
-          <div className={`flex items-center gap-1 text-sm mt-2 font-medium ${trend > 0 ? 'text-profit' : 'text-loss'}`}>
-            {trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-            {Math.abs(trend).toFixed(1)}%
-          </div>
-        )}
-      </div>
-    </div>
-  </Card>
-);
-
 export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  const stats = useMemo(() => {
-    if (!trades || trades.length === 0) {
-      return {
-        totalTrades: 0,
-        winningTrades: 0,
-        losingTrades: 0,
-        totalProfit: 0,
-        grossProfit: 0,
-        grossLoss: 0,
-        winRate: 0,
-        profitFactor: 0,
-        avgWin: 0,
-        avgLoss: 0,
-        monthTrades: 0,
-        monthProfit: 0,
-        ytdTrades: 0,
-        ytdProfit: 0,
-      };
-    }
-
-    const totalTrades = trades.length;
-    const winningTrades = trades.filter(t => Number(t.profit) > 0);
-    const losingTrades = trades.filter(t => Number(t.profit) < 0);
-
-    const totalProfit = trades.reduce((sum, t) => sum + Number(t.profit), 0);
-    const grossProfit = winningTrades.reduce((sum, t) => sum + Number(t.profit), 0);
-    const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + Number(t.profit), 0));
-
-    const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : 0;
-    const avgWin = winningTrades.length > 0 ? grossProfit / winningTrades.length : 0;
-    const avgLoss = losingTrades.length > 0 ? grossLoss / losingTrades.length : 0;
-
-    const now = dayjs();
-    const monthTrades = trades.filter(t => dayjs(t.close_time).isSame(now, 'month'));
-    const monthProfit = monthTrades.reduce((sum, t) => sum + Number(t.profit), 0);
-
-    const ytdTrades = trades.filter(t => dayjs(t.close_time).year() === now.year());
-    const ytdProfit = ytdTrades.reduce((sum, t) => sum + Number(t.profit), 0);
-
-    return {
-      totalTrades,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      totalProfit,
-      grossProfit,
-      grossLoss,
-      winRate,
-      profitFactor,
-      avgWin,
-      avgLoss,
-      monthTrades: monthTrades.length,
-      monthProfit,
-      ytdTrades: ytdTrades.length,
-      ytdProfit,
-    };
-  }, [trades, accountId]);
+  // Calculate all metrics using analytics utilities
+  const kpiMetrics = useMemo(() => calculateKPIMetrics(trades), [trades]);
+  const ytdMetrics = useMemo(() => calculateYTDMetrics(trades), [trades]);
+  const monthlyData = useMemo(() => calculateMonthlyBreakdown(trades), [trades]);
+  const tradeDistribution = useMemo(() => calculateTradeDistribution(trades), [trades]);
+  const profitFactorData = useMemo(() => calculateProfitFactor(trades), [trades]);
+  
+  const executiveSummary = useMemo(() => {
+    // Calculate average quality (simplified for summary)
+    const avgQuality = trades.length > 0 ? 70 : 0; // Placeholder
+    const maxDrawdown = 0; // Would need to calculate from equity curve
+    
+    return generateExecutiveSummary(
+      profitFactorData.profitFactor,
+      ytdMetrics.ytdPnL,
+      kpiMetrics.winRate,
+      avgQuality,
+      maxDrawdown
+    );
+  }, [trades, kpiMetrics, ytdMetrics, profitFactorData]);
 
   if (isLoading) {
     return (
@@ -110,74 +66,79 @@ export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold mb-2">Executive Summary</h2>
-        <p className="text-muted-foreground">Quick performance snapshot</p>
+        <h2 className="text-3xl font-bold tracking-tight mb-2">Executive Summary</h2>
+        <p className="text-muted-foreground">Institutional-grade performance overview and analytics</p>
       </div>
 
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard
-          icon={DollarSign}
+      {/* A. KPI Grid - Institutional Header Row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KPICard
           label="Total P&L"
-          value={`$${stats.totalProfit.toFixed(2)}`}
-          subValue={`${stats.totalTrades} trades`}
+          value={`$${kpiMetrics.totalPnL.toFixed(2)}`}
+          icon={DollarSign}
+          colorScheme={kpiMetrics.totalPnL >= 0 ? "profit" : "loss"}
+          sparklineData={kpiMetrics.sparklineData}
         />
-        <MetricCard
-          icon={Target}
+        <KPICard
           label="Win Rate"
-          value={`${stats.winRate.toFixed(1)}%`}
-          subValue={`${stats.winningTrades}W / ${stats.losingTrades}L`}
+          value={`${kpiMetrics.winRate.toFixed(1)}%`}
+          icon={Target}
+          colorScheme={kpiMetrics.winRate >= 50 ? "profit" : "loss"}
         />
-        <MetricCard
-          icon={Award}
+        <KPICard
           label="Profit Factor"
-          value={stats.profitFactor.toFixed(2)}
-          subValue={`$${stats.grossProfit.toFixed(0)} / $${stats.grossLoss.toFixed(0)}`}
+          value={kpiMetrics.profitFactor.toFixed(2)}
+          icon={Award}
+          colorScheme={kpiMetrics.profitFactor >= 1.5 ? "profit" : kpiMetrics.profitFactor >= 1 ? "neutral" : "loss"}
         />
-        <MetricCard
+        <KPICard
+          label="Average Win"
+          value={`$${kpiMetrics.avgWin.toFixed(2)}`}
           icon={TrendingUp}
-          label="Avg Win"
-          value={`$${stats.avgWin.toFixed(2)}`}
+          colorScheme="profit"
         />
-        <MetricCard
+        <KPICard
+          label="Average Loss"
+          value={`$${kpiMetrics.avgLoss.toFixed(2)}`}
           icon={TrendingDown}
-          label="Avg Loss"
-          value={`$${stats.avgLoss.toFixed(2)}`}
+          colorScheme="loss"
         />
-        <MetricCard
-          icon={Calendar}
+        <KPICard
           label="This Month"
-          value={`$${stats.monthProfit.toFixed(2)}`}
-          subValue={`${stats.monthTrades} trades`}
+          value={`$${kpiMetrics.thisMonthPnL.toFixed(2)}`}
+          icon={Calendar}
+          colorScheme={kpiMetrics.thisMonthPnL >= 0 ? "profit" : "loss"}
         />
       </div>
 
-      {/* YTD Performance */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Year-to-Date Performance</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">YTD P&L</div>
-            <div className="text-2xl font-bold">${stats.ytdProfit.toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">YTD Trades</div>
-            <div className="text-2xl font-bold">{stats.ytdTrades}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Avg per Trade</div>
-            <div className="text-2xl font-bold">
-              {stats.ytdTrades > 0 ? (stats.ytdProfit / stats.ytdTrades).toFixed(2) : '0.00'}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Best Month</div>
-            <div className="text-2xl font-bold">-</div>
-          </div>
-        </div>
-      </Card>
+      {/* B. YTD Performance Panel */}
+      <YTDPanel
+        ytdPnL={ytdMetrics.ytdPnL}
+        ytdTrades={ytdMetrics.ytdTrades}
+        avgPerTrade={ytdMetrics.avgPerTrade}
+        bestMonth={ytdMetrics.bestMonth}
+        worstMonth={ytdMetrics.worstMonth}
+        monthlyData={ytdMetrics.monthlyData}
+      />
+
+      {/* C. Monthly P&L Breakdown */}
+      <MonthlyBreakdown monthlyData={monthlyData} />
+
+      {/* D & E. Trade Distribution and Profit Factor */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TradeDistribution {...tradeDistribution} />
+        <ProfitFactorPanel {...profitFactorData} />
+      </div>
+
+      {/* F. Executive AI Summary */}
+      <ExecutiveAISummary
+        summary={executiveSummary}
+        profitFactor={profitFactorData.profitFactor}
+        ytdPnL={ytdMetrics.ytdPnL}
+      />
     </div>
   );
 };
