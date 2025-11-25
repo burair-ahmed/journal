@@ -174,7 +174,7 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
 
       {/* Section A: KPI Overview Strip */}
       <div className="overflow-x-auto pb-2">
-        <div className="flex gap-4 min-w-max">
+        <div className="flex gap-4 min-w-max justify-between">
           {/* Max Drawdown */}
           <Card className="px-6 py-4 rounded-2xl hover:scale-105 transition-transform duration-200 min-w-[180px]">
             <div className="text-xs text-muted-foreground mb-1">Max Drawdown</div>
