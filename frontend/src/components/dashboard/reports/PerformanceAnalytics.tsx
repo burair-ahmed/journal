@@ -1,8 +1,16 @@
-import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { useFilteredTrades } from "@/hooks/useTrades";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Award, DollarSign, Target } from "lucide-react";
+
+// Import performance subcomponents
+import { KPIStat } from "@/components/performance/KPIStat";
+import { MonthlyPerformanceCard } from "@/components/performance/MonthlyPerformanceCard";
+import { QualityScorePanel } from "@/components/performance/QualityScorePanel";
+import { BestTrades } from "@/components/performance/BestTrades";
+import { WorstTrades } from "@/components/performance/WorstTrades";
+import { PerformanceSummary } from "@/components/performance/PerformanceSummary";
 
 interface PerformanceAnalyticsProps {
   accountId?: number;
@@ -13,7 +21,22 @@ export const PerformanceAnalytics = ({ accountId }: PerformanceAnalyticsProps) =
 
   const analytics = useMemo(() => {
     if (!trades || trades.length === 0) {
-      return { monthlyData: {}, avgQuality: 0, bestTrades: [], worstTrades: [] };
+      return { 
+        monthlyData: {}, 
+        avgQuality: 0, 
+        bestTrades: [], 
+        worstTrades: [],
+        last30DaysPnL: 0,
+        winRate: 0,
+        bestTradeProfit: 0,
+        monthlyProfitTrend: [],
+        qualityBreakdown: {
+          withSL: 0,
+          withTP: 0,
+          profitable: 0,
+          avgRR: 0
+        }
+      };
     }
 
     // Monthly Performance
@@ -25,6 +48,26 @@ export const PerformanceAnalytics = ({ accountId }: PerformanceAnalyticsProps) =
       monthlyData[month].trades += 1;
       if (Number(t.profit) > 0) monthlyData[month].wins += 1;
     });
+
+    // Last 30 days P&L
+    const thirtyDaysAgo = dayjs().subtract(30, 'day');
+    const last30DaysPnL = trades
+      .filter(t => dayjs(t.close_time).isAfter(thirtyDaysAgo))
+      .reduce((sum, t) => sum + Number(t.profit), 0);
+
+    // Win Rate
+    const winningTrades = trades.filter(t => Number(t.profit) > 0);
+    const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
+
+    // Best Trade Profit
+    const bestTradeProfit = trades.length > 0 
+      ? Math.max(...trades.map(t => Number(t.profit))) 
+      : 0;
+
+    // Monthly Profit Trend (last 6 months for sparkline)
+    const monthlyProfitTrend = Object.entries(monthlyData)
+      .slice(-6)
+      .map(([, data]) => data.profit);
 
     // Trade Quality Scores
     const qualityScores = trades.map(t => {
@@ -40,12 +83,50 @@ export const PerformanceAnalytics = ({ accountId }: PerformanceAnalyticsProps) =
       ? qualityScores.reduce((sum, t) => sum + t.qualityScore, 0) / qualityScores.length 
       : 0;
 
+    // Quality Breakdown
+    const tradesWithSL = trades.filter(t => t.sl_price && Number(t.sl_price) > 0).length;
+    const tradesWithTP = trades.filter(t => t.tp_price && Number(t.tp_price) > 0).length;
+    const profitableTrades = winningTrades.length;
+
+    // Average R:R
+    const rrTrades = trades.filter(t => {
+      const tp = Number(t.tp_price || 0);
+      const sl = Number(t.sl_price || 0);
+      const entry = Number(t.open_price);
+      return tp > 0 && sl > 0 && entry > 0;
+    });
+    const avgRR = rrTrades.length > 0
+      ? rrTrades.reduce((sum, t) => {
+          const tp = Number(t.tp_price);
+          const sl = Number(t.sl_price);
+          const entry = Number(t.open_price);
+          const reward = Math.abs(tp - entry);
+          const risk = Math.abs(entry - sl);
+          return sum + (risk > 0 ? reward / risk : 0);
+        }, 0) / rrTrades.length
+      : 0;
+
     // Best & Worst Trades
     const sortedByProfit = [...trades].sort((a, b) => Number(b.profit) - Number(a.profit));
     const bestTrades = sortedByProfit.slice(0, 10);
     const worstTrades = sortedByProfit.slice(-10).reverse();
 
-    return { monthlyData, avgQuality, bestTrades, worstTrades };
+    return { 
+      monthlyData, 
+      avgQuality, 
+      bestTrades, 
+      worstTrades,
+      last30DaysPnL,
+      winRate,
+      bestTradeProfit,
+      monthlyProfitTrend,
+      qualityBreakdown: {
+        withSL: tradesWithSL,
+        withTP: tradesWithTP,
+        profitable: profitableTrades,
+        avgRR
+      }
+    };
   }, [trades]);
 
   if (isLoading) {
@@ -65,86 +146,89 @@ export const PerformanceAnalytics = ({ accountId }: PerformanceAnalyticsProps) =
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold mb-2">Performance Analytics</h2>
-        <p className="text-muted-foreground">Detailed performance breakdown</p>
+        <h2 className="text-3xl font-bold tracking-tight mb-2">Performance Analytics</h2>
+        <p className="text-muted-foreground">Institutional-grade performance insights and trade analysis</p>
       </div>
 
-      {/* Trade Quality */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Trade Quality Score</h3>
-        <div className="text-3xl font-bold mb-2">{analytics.avgQuality.toFixed(1)}/100</div>
-        <p className="text-sm text-muted-foreground">
-          Average quality across {trades.length} trades
-        </p>
-        <div className="mt-4 h-2 bg-secondary rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-loss via-muted to-profit"
-            style={{ width: `${analytics.avgQuality}%` }}
+      {/* A. KPI Header Strip */}
+      <div className="overflow-x-auto pb-2">
+        <div className="flex gap-4 min-w-max">
+          <KPIStat
+            label="Avg Quality Score"
+            value={analytics.avgQuality.toFixed(1)}
+            icon={Award}
+            color="primary"
+          />
+          <KPIStat
+            label="Last 30 Days P&L"
+            value={`$${analytics.last30DaysPnL.toFixed(2)}`}
+            icon={DollarSign}
+            color={analytics.last30DaysPnL >= 0 ? "profit" : "loss"}
+          />
+          <KPIStat
+            label="Win Rate"
+            value={`${analytics.winRate.toFixed(1)}%`}
+            icon={Target}
+            color={analytics.winRate >= 50 ? "profit" : "loss"}
+          />
+          <KPIStat
+            label="Monthly Trend"
+            value="6M"
+            icon={TrendingUp}
+            sparklineData={analytics.monthlyProfitTrend}
+            color="primary"
+          />
+          <KPIStat
+            label="Best Trade"
+            value={`$${analytics.bestTradeProfit.toFixed(2)}`}
+            icon={TrendingUp}
+            color="profit"
           />
         </div>
-      </Card>
+      </div>
 
-      {/* Monthly Performance */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Monthly Performance</h3>
-        <div className="space-y-2">
+      {/* B. Monthly Performance Grid */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Monthly Performance</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(analytics.monthlyData)
             .slice(-6)
             .map(([month, data]) => (
-              <div key={month} className="flex items-center justify-between p-3 bg-secondary/20 rounded-lg">
-                <div>
-                  <div className="font-medium">{dayjs(month).format('MMMM YYYY')}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {data.trades} trades • {((data.wins / data.trades) * 100).toFixed(1)}% win rate
-                  </div>
-                </div>
-                <div className={`text-lg font-bold ${data.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
-                  {data.profit.toFixed(2)}
-                </div>
-              </div>
+              <MonthlyPerformanceCard
+                key={month}
+                month={dayjs(month).format('MMMM YYYY')}
+                profit={data.profit}
+                trades={data.trades}
+                winRate={(data.wins / data.trades) * 100}
+              />
             ))}
         </div>
-      </Card>
+      </div>
 
-      {/* Best Trades */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">🏆 Top 10 Winning Trades</h3>
-        <div className="space-y-2">
-          {analytics.bestTrades.map((t, i) => (
-            <div key={i} className="flex items-center justify-between p-2 hover:bg-secondary/20 rounded">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-medium text-muted-foreground">#{i + 1}</div>
-                <div>
-                  <div className="font-medium">{t.symbol}</div>
-                  <div className="text-xs text-muted-foreground">{dayjs(t.close_time).format('MMM DD, YYYY')}</div>
-                </div>
-              </div>
-              <div className="text-profit font-bold">${Number(t.profit).toFixed(2)}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* C. Trade Quality Panel */}
+      <QualityScorePanel
+        score={analytics.avgQuality}
+        totalTrades={trades.length}
+        breakdown={analytics.qualityBreakdown}
+      />
 
-      {/* Worst Trades */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">😞 Top 10 Losing Trades</h3>
-        <div className="space-y-2">
-          {analytics.worstTrades.map((t, i) => (
-            <div key={i} className="flex items-center justify-between p-2 hover:bg-secondary/20 rounded">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-medium text-muted-foreground">#{i + 1}</div>
-                <div>
-                  <div className="font-medium">{t.symbol}</div>
-                  <div className="text-xs text-muted-foreground">{dayjs(t.close_time).format('MMM DD, YYYY')}</div>
-                </div>
-              </div>
-              <div className="text-loss font-bold">${Number(t.profit).toFixed(2)}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* D. Best & Worst Trades */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BestTrades trades={analytics.bestTrades} />
+        <WorstTrades trades={analytics.worstTrades} />
+      </div>
+
+      {/* E. Performance Summary */}
+      <PerformanceSummary
+        winRate={analytics.winRate}
+        avgQuality={analytics.avgQuality}
+        monthlyData={analytics.monthlyData}
+        worstTrades={analytics.worstTrades}
+        totalTrades={trades.length}
+      />
     </div>
   );
 };
