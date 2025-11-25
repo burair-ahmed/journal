@@ -12,23 +12,20 @@ interface TaxComplianceProps {
 export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  if (isLoading) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">Loading data...</div>
-      </Card>
-    );
-  }
-
-  if (!trades || trades.length === 0) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">No trades available</div>
-      </Card>
-    );
-  }
-
   const taxData = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        yearlyData: {},
+        currentYear: dayjs().year(),
+        totalPnL: 0,
+        totalCommissions: 0,
+        totalSwaps: 0,
+        netPnL: 0,
+        quarters: [],
+        currentYearTrades: []
+      };
+    }
+
     const currentYear = dayjs().year();
     
     // Annual summary
@@ -60,6 +57,22 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
     
     return { yearlyData, currentYear, totalPnL, totalCommissions, totalSwaps, netPnL, quarters, currentYearTrades };
   }, [trades]);
+
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
 
   const handleExportTaxReport = () => {
     // Generate CSV for tax purposes
@@ -100,14 +113,14 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
       {/* Annual Tax Report */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <FileText className="h-5 w-5 text-blue-500" />
+          <FileText className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">📅 {taxData.currentYear} Tax Year Summary</h3>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="p-4 bg-secondary/20 rounded-lg">
             <div className="text-sm text-muted-foreground">Total Realized P&L</div>
-            <div className={`text-2xl font-bold ${taxData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${taxData.totalPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
               ${taxData.totalPnL.toFixed(2)}
             </div>
           </div>
@@ -117,11 +130,11 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
           </div>
           <div className="p-4 bg-secondary/20 rounded-lg">
             <div className="text-sm text-muted-foreground">Total Commissions</div>
-            <div className="text-2xl font-bold text-red-600">${Math.abs(taxData.totalCommissions).toFixed(2)}</div>
+            <div className="text-2xl font-bold text-loss">${Math.abs(taxData.totalCommissions).toFixed(2)}</div>
           </div>
           <div className="p-4 bg-secondary/20 rounded-lg">
             <div className="text-sm text-muted-foreground">Net P&L</div>
-            <div className={`text-2xl font-bold ${taxData.netPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${taxData.netPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
               ${taxData.netPnL.toFixed(2)}
             </div>
           </div>
@@ -134,7 +147,7 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
             {taxData.quarters.map(q => (
               <div key={q.quarter} className="p-3 bg-secondary/20 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground">Q{q.quarter}</div>
-                <div className={`text-lg font-bold ${q.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-lg font-bold ${q.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
                   ${q.profit.toFixed(2)}
                 </div>
                 <div className="text-xs text-muted-foreground">{q.trades} trades</div>
@@ -156,7 +169,7 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
                   <div className="font-medium">{year}</div>
                   <div className="text-sm text-muted-foreground">{data.trades} trades</div>
                 </div>
-                <div className={`text-lg font-bold ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-lg font-bold ${data.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
                   ${data.profit.toFixed(2)}
                 </div>
               </div>
@@ -178,8 +191,8 @@ export const TaxCompliance = ({ accountId }: TaxComplianceProps) => {
             </p>
           </div>
           
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-primary">
               <strong>📌 Note:</strong> This report is formatted for tax filing purposes. 
               Consult with a tax professional for specific guidance on reporting trading income.
             </p>

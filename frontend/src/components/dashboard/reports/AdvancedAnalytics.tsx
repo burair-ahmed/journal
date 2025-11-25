@@ -11,22 +11,22 @@ interface AdvancedAnalyticsProps {
 export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  if (isLoading) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">Loading data...</div>
-      </Card>
-    );
-  }
-
-  if (!trades || trades.length === 0) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">No trades available</div>
-      </Card>
-    );
-  }
   const advanced = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        avgReturn: 0,
+        stdDev: 0,
+        monteCarlo: { best: 0, worst: 0, median: 0 },
+        monthProfit: 0,
+        projectedMonthEnd: 0,
+        monthlyGoal: 1000,
+        yearlyGoal: 12000,
+        ytdProfit: 0,
+        daysPassed: dayjs().date(),
+        daysInMonth: dayjs().daysInMonth()
+      };
+    }
+
     // Monte Carlo Simulation (simplified)
     const returns = trades.map(t => Number(t.profit));
     const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
@@ -80,6 +80,22 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
     };
   }, [trades]);
 
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -90,14 +106,14 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
       {/* Current Month Review */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5 text-blue-500" />
+          <TrendingUp className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">📊 Current Month Mid-Month Review</h3>
         </div>
         
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <div className="text-sm text-muted-foreground">MTD Performance</div>
-            <div className={`text-3xl font-bold ${advanced.monthProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-3xl font-bold ${advanced.monthProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
               ${advanced.monthProfit.toFixed(2)}
             </div>
             <div className="text-sm text-muted-foreground mt-1">
@@ -106,7 +122,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Projected Month-End</div>
-            <div className={`text-3xl font-bold ${advanced.projectedMonthEnd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-3xl font-bold ${advanced.projectedMonthEnd >= 0 ? 'text-profit' : 'text-loss'}`}>
               ${advanced.projectedMonthEnd.toFixed(2)}
             </div>
             <div className="text-sm text-muted-foreground mt-1">
@@ -115,7 +131,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
           </div>
         </div>
         
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+        <div className="p-3 bg-secondary/20 border border-secondary/20 rounded-lg text-sm text-foreground">
           💡 {advanced.projectedMonthEnd >= advanced.monthlyGoal ? 
             `On track to exceed monthly goal of $${advanced.monthlyGoal}!` :
             `Need $${(advanced.monthlyGoal - advanced.projectedMonthEnd).toFixed(2)} more to hit monthly goal.`}
@@ -125,7 +141,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
       {/* Goal Progress */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Target className="h-5 w-5 text-purple-500" />
+          <Target className="h-5 w-5 text-secondary-foreground" />
           <h3 className="text-lg font-semibold">🎯 Goal Progress Report</h3>
         </div>
         
@@ -139,7 +155,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
             </div>
             <div className="h-3 bg-secondary rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                className="h-full bg-gradient-to-r from-primary to-accent"
                 style={{ width: `${Math.min(100, (advanced.monthProfit / advanced.monthlyGoal) * 100)}%` }}
               />
             </div>
@@ -154,7 +170,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
             </div>
             <div className="h-3 bg-secondary rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                className="h-full bg-gradient-to-r from-primary to-accent"
                 style={{ width: `${Math.min(100, (advanced.ytdProfit / advanced.yearlyGoal) * 100)}%` }}
               />
             </div>
@@ -162,7 +178,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
         </div>
         
         {advanced.ytdProfit >= advanced.yearlyGoal && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+          <div className="mt-4 p-3 bg-profit/10 border border-profit/20 rounded-lg text-sm text-profit">
             🏆 <strong>Congratulations!</strong> You've achieved your yearly goal!
           </div>
         )}
@@ -171,7 +187,7 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
       {/* Monte Carlo Simulation */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Zap className="h-5 w-5 text-yellow-500" />
+          <Zap className="h-5 w-5 text-accent" />
           <h3 className="text-lg font-semibold">🎲 Monte Carlo Simulation</h3>
         </div>
         
@@ -180,21 +196,21 @@ export const AdvancedAnalytics = ({ accountId }: AdvancedAnalyticsProps) => {
         </p>
         
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg text-center">
-            <div className="text-sm text-green-700 mb-1">Best Case (95%)</div>
-            <div className="text-2xl font-bold text-green-600">
+          <div className="p-4 bg-profit/10 rounded-lg text-center">
+            <div className="text-sm text-profit mb-1">Best Case (95%)</div>
+            <div className="text-2xl font-bold text-profit">
               ${advanced.monteCarlo.best.toFixed(2)}
             </div>
           </div>
-          <div className="p-4 bg-blue-50 rounded-lg text-center">
-            <div className="text-sm text-blue-700 mb-1">Expected (50%)</div>
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="p-4 bg-primary/10 rounded-lg text-center">
+            <div className="text-sm text-primary mb-1">Expected (50%)</div>
+            <div className="text-2xl font-bold text-primary">
               ${advanced.monteCarlo.median.toFixed(2)}
             </div>
           </div>
-          <div className="p-4 bg-red-50 rounded-lg text-center">
-            <div className="text-sm text-red-700 mb-1">Worst Case (5%)</div>
-            <div className="text-2xl font-bold text-red-600">
+          <div className="p-4 bg-loss/10 rounded-lg text-center">
+            <div className="text-sm text-loss mb-1">Worst Case (5%)</div>
+            <div className="text-2xl font-bold text-loss">
               ${advanced.monteCarlo.worst.toFixed(2)}
             </div>
           </div>

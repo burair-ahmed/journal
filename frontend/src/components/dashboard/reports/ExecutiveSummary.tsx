@@ -8,6 +8,30 @@ interface ExecutiveSummaryProps {
   accountId?: number;
 }
 
+// Helper component for metric cards
+const MetricCard = ({ icon: Icon, label, value, subValue, trend, iconColor = "text-primary" }: any) => (
+  <Card className="p-6">
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+          <div className={`p-2 rounded-md bg-secondary/50 ${iconColor}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <span className="font-medium">{label}</span>
+        </div>
+        <div className="text-2xl font-bold tracking-tight">{value}</div>
+        {subValue && <div className="text-sm text-muted-foreground mt-1 font-medium">{subValue}</div>}
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 text-sm mt-2 font-medium ${trend > 0 ? 'text-profit' : 'text-loss'}`}>
+            {trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+            {Math.abs(trend).toFixed(1)}%
+          </div>
+        )}
+      </div>
+    </div>
+  </Card>
+);
+
 export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
@@ -32,28 +56,25 @@ export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
     }
 
     const totalTrades = trades.length;
-    const winningTrades = trades.filter((t) => Number(t.profit) > 0);
-    const losingTrades = trades.filter((t) => Number(t.profit) < 0);
-    
+    const winningTrades = trades.filter(t => Number(t.profit) > 0);
+    const losingTrades = trades.filter(t => Number(t.profit) < 0);
+
     const totalProfit = trades.reduce((sum, t) => sum + Number(t.profit), 0);
     const grossProfit = winningTrades.reduce((sum, t) => sum + Number(t.profit), 0);
     const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + Number(t.profit), 0));
-    
+
     const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : 0;
-    
     const avgWin = winningTrades.length > 0 ? grossProfit / winningTrades.length : 0;
     const avgLoss = losingTrades.length > 0 ? grossLoss / losingTrades.length : 0;
-    
-    // Current month
+
     const now = dayjs();
     const monthTrades = trades.filter(t => dayjs(t.close_time).isSame(now, 'month'));
     const monthProfit = monthTrades.reduce((sum, t) => sum + Number(t.profit), 0);
-    
-    // YTD
+
     const ytdTrades = trades.filter(t => dayjs(t.close_time).year() === now.year());
     const ytdProfit = ytdTrades.reduce((sum, t) => sum + Number(t.profit), 0);
-    
+
     return {
       totalTrades,
       winningTrades: winningTrades.length,
@@ -87,27 +108,6 @@ export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
       </Card>
     );
   }
-
-  const MetricCard = ({ icon: Icon, label, value, subValue, trend }: any) => (
-    <Card className="p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-            <Icon className="h-4 w-4" />
-            {label}
-          </div>
-          <div className="text-2xl font-bold">{value}</div>
-          {subValue && <div className="text-sm text-muted-foreground mt-1">{subValue}</div>}
-        </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-sm ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-            {Math.abs(trend).toFixed(1)}%
-          </div>
-        )}
-      </div>
-    </Card>
-  );
 
   return (
     <div className="space-y-6">
@@ -169,7 +169,7 @@ export const ExecutiveSummary = ({ accountId }: ExecutiveSummaryProps) => {
           <div>
             <div className="text-sm text-muted-foreground">Avg per Trade</div>
             <div className="text-2xl font-bold">
-              ${stats.ytdTrades > 0 ? (stats.ytdProfit / stats.ytdTrades).toFixed(2) : '0.00'}
+              {stats.ytdTrades > 0 ? (stats.ytdProfit / stats.ytdTrades).toFixed(2) : '0.00'}
             </div>
           </div>
           <div>

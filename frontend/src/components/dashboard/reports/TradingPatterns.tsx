@@ -10,22 +10,17 @@ interface TradingPatternsProps {
 export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  if (isLoading) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">Loading data...</div>
-      </Card>
-    );
-  }
-
-  if (!trades || trades.length === 0) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">No trades available</div>
-      </Card>
-    );
-  }
   const patterns = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        symbolStats: {},
+        dayStats: {},
+        durationStats: { scalp: 0, intraday: 0, swing: 0, position: 0 },
+        afterWinStats: { wins: 0, losses: 0 },
+        afterLossStats: { wins: 0, losses: 0 }
+      };
+    }
+
     // Symbol Performance
     const symbolStats: Record<string, { wins: number; losses: number; profit: number; count: number }> = {};
     trades.forEach(t => {
@@ -73,6 +68,22 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
     return { symbolStats, dayStats, durationStats, afterWinStats, afterLossStats };
   }, [trades]);
 
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,7 +108,7 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
                       {stats.count} trades • {winRate.toFixed(1)}% win rate
                     </div>
                   </div>
-                  <div className={`text-lg font-bold ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-lg font-bold ${stats.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
                     ${stats.profit.toFixed(2)}
                   </div>
                 </div>
@@ -118,7 +129,7 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
                   <div className="font-medium">{day}</div>
                   <div className="text-sm text-muted-foreground">{stats.count} trades</div>
                 </div>
-                <div className={`text-lg font-bold ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-lg font-bold ${stats.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
                   ${stats.profit.toFixed(2)}
                 </div>
               </div>
@@ -159,11 +170,11 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
             <div className="flex gap-4">
               <div>
                 <div className="text-xs text-muted-foreground">Next Win</div>
-                <div className="text-xl font-bold text-green-600">{patterns.afterWinStats.wins}</div>
+                <div className="text-xl font-bold text-profit">{patterns.afterWinStats.wins}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Next Loss</div>
-                <div className="text-xl font-bold text-red-600">{patterns.afterWinStats.losses}</div>
+                <div className="text-xl font-bold text-loss">{patterns.afterWinStats.losses}</div>
               </div>
             </div>
             <div className="text-sm mt-2">
@@ -175,11 +186,11 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
             <div className="flex gap-4">
               <div>
                 <div className="text-xs text-muted-foreground">Next Win</div>
-                <div className="text-xl font-bold text-green-600">{patterns.afterLossStats.wins}</div>
+                <div className="text-xl font-bold text-profit">{patterns.afterLossStats.wins}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Next Loss</div>
-                <div className="text-xl font-bold text-red-600">{patterns.afterLossStats.losses}</div>
+                <div className="text-xl font-bold text-loss">{patterns.afterLossStats.losses}</div>
               </div>
             </div>
             <div className="text-sm mt-2">

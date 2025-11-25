@@ -10,22 +10,21 @@ interface RiskManagementProps {
 export const RiskManagement = ({ accountId }: RiskManagementProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  if (isLoading) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">Loading data...</div>
-      </Card>
-    );
-  }
-
-  if (!trades || trades.length === 0) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">No trades available</div>
-      </Card>
-    );
-  }
   const riskMetrics = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        maxDrawdown: 0,
+        currentDrawdown: 0,
+        longestWinStreak: 0,
+        longestLossStreak: 0,
+        avgRR: 0,
+        avgVolume: 0,
+        maxVolume: 0,
+        minVolume: 0,
+        rrRatios: []
+      };
+    }
+
     // Drawdown calculation
     let peak = 0;
     let maxDrawdown = 0;
@@ -94,6 +93,22 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
     };
   }, [trades]);
 
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -104,13 +119,13 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
       {/* Drawdown Analysis */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingDown className="h-5 w-5 text-red-500" />
+          <TrendingDown className="h-5 w-5 text-loss" />
           <h3 className="text-lg font-semibold">Drawdown Analysis</h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-sm text-muted-foreground">Maximum Drawdown</div>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-loss">
               ${riskMetrics.maxDrawdown.toFixed(2)}
             </div>
           </div>
@@ -122,9 +137,9 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
           </div>
         </div>
         {riskMetrics.maxDrawdown > 1000 && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-            <div className="text-sm text-red-800">
+          <div className="mt-4 p-3 bg-loss/10 border border-loss/20 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-loss mt-0.5" />
+            <div className="text-sm text-loss">
               <strong>High Risk Alert:</strong> Your maximum drawdown exceeds $1,000. Consider reducing position sizes.
             </div>
           </div>
@@ -135,13 +150,13 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Consecutive Wins/Losses</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg">
-            <div className="text-sm text-green-700 mb-1">Longest Win Streak</div>
-            <div className="text-3xl font-bold text-green-600">{riskMetrics.longestWinStreak}</div>
+          <div className="p-4 bg-profit/10 rounded-lg">
+            <div className="text-sm text-profit mb-1">Longest Win Streak</div>
+            <div className="text-3xl font-bold text-profit">{riskMetrics.longestWinStreak}</div>
           </div>
-          <div className="p-4 bg-red-50 rounded-lg">
-            <div className="text-sm text-red-700 mb-1">Longest Loss Streak</div>
-            <div className="text-3xl font-bold text-red-600">{riskMetrics.longestLossStreak}</div>
+          <div className="p-4 bg-loss/10 rounded-lg">
+            <div className="text-sm text-loss mb-1">Longest Loss Streak</div>
+            <div className="text-3xl font-bold text-loss">{riskMetrics.longestLossStreak}</div>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-4">
@@ -152,7 +167,7 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
       {/* Risk-Reward */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Shield className="h-5 w-5 text-blue-500" />
+          <Shield className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Risk-Reward Analysis</h3>
         </div>
         <div className="mb-4">
@@ -165,7 +180,7 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
             <span className="font-medium">{riskMetrics.rrRatios.length}</span>
           </div>
           {riskMetrics.avgRR < 1.5 && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+            <div className="p-3 bg-secondary/20 border border-secondary/20 rounded-lg text-sm text-muted-foreground">
               💡 Aim for at least 1.5:1 R:R ratio to improve profitability
             </div>
           )}

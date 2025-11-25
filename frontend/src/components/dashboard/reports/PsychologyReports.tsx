@@ -11,22 +11,19 @@ interface PsychologyReportsProps {
 export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
   const { trades = [], isLoading } = useFilteredTrades(accountId);
 
-  if (isLoading) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">Loading data...</div>
-      </Card>
-    );
-  }
-
-  if (!trades || trades.length === 0) {
-    return (
-      <Card className="p-8">
-        <div className="text-center text-muted-foreground">No trades available</div>
-      </Card>
-    );
-  }
   const psychMetrics = useMemo(() => {
+    if (!trades || trades.length === 0) {
+      return {
+        tpslAdherence: 0,
+        avgTradesPerDay: 0,
+        overtradingDays: 0,
+        revengeTrades: 0,
+        stdDev: 0,
+        consistencyScore: 0,
+        disciplineScore: 0
+      };
+    }
+
     // Discipline Score
     const tradesWithTPSL = trades.filter(t => t.tp_price && t.sl_price);
     const tpslAdherence = (tradesWithTPSL.length / trades.length) * 100;
@@ -73,6 +70,22 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
     };
   }, [trades]);
 
+  if (isLoading) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">Loading data...</div>
+      </Card>
+    );
+  }
+
+  if (!trades || trades.length === 0) {
+    return (
+      <Card className="p-8">
+        <div className="text-center text-muted-foreground">No trades available</div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -83,15 +96,15 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
       {/* Discipline Score */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Brain className="h-5 w-5 text-purple-500" />
+          <Brain className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Overall Discipline Score</h3>
         </div>
         <div className="text-4xl font-bold mb-2">{psychMetrics.disciplineScore.toFixed(1)}/100</div>
         <div className="h-3 bg-secondary rounded-full overflow-hidden mb-4">
           <div 
             className={`h-full ${
-              psychMetrics.disciplineScore >= 80 ? 'bg-green-500' :
-              psychMetrics.disciplineScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+              psychMetrics.disciplineScore >= 80 ? 'bg-profit' :
+              psychMetrics.disciplineScore >= 60 ? 'bg-primary' : 'bg-loss'
             }`}
             style={{ width: `${psychMetrics.disciplineScore}%` }}
           />
@@ -117,11 +130,11 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
         <h3 className="text-lg font-semibold mb-4">😰 Emotional State Correlation</h3>
         
         {psychMetrics.revengeTrades > 5 && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 mb-4">
-            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+          <div className="p-4 bg-loss/10 border border-loss/20 rounded-lg flex items-start gap-3 mb-4">
+            <AlertCircle className="h-5 w-5 text-loss mt-0.5" />
             <div>
-              <div className="font-medium text-red-900">Revenge Trading Detected</div>
-              <div className="text-sm text-red-700 mt-1">
+              <div className="font-medium text-loss">Revenge Trading Detected</div>
+              <div className="text-sm text-loss/80 mt-1">
                 You've taken {psychMetrics.revengeTrades} trades within 30 minutes of a loss. 
                 This suggests emotional trading. Consider implementing a cooldown period.
               </div>
@@ -130,11 +143,11 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
         )}
         
         {psychMetrics.overtradingDays > 0 && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 mb-4">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+          <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3 mb-4">
+            <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
             <div>
-              <div className="font-medium text-yellow-900">Overtrading Alert</div>
-              <div className="text-sm text-yellow-700 mt-1">
+              <div className="font-medium text-primary">Overtrading Alert</div>
+              <div className="text-sm text-primary/80 mt-1">
                 On {psychMetrics.overtradingDays} days, you traded more than 2x your daily average. 
                 Quality over quantity!
               </div>
@@ -143,11 +156,11 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
         )}
         
         {psychMetrics.revengeTrades === 0 && psychMetrics.overtradingDays === 0 && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+          <div className="p-4 bg-profit/10 border border-profit/20 rounded-lg flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-profit mt-0.5" />
             <div>
-              <div className="font-medium text-green-900">Excellent Emotional Control</div>
-              <div className="text-sm text-green-700 mt-1">
+              <div className="font-medium text-profit">Excellent Emotional Control</div>
+              <div className="text-sm text-profit/80 mt-1">
                 No signs of revenge trading or overtrading detected. Keep up the disciplined approach!
               </div>
             </div>
@@ -174,7 +187,7 @@ export const PsychologyReports = ({ accountId }: PsychologyReportsProps) => {
             </p>
           </div>
         </div>
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+        <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">
           💡 <strong>Tip:</strong> Aim for consistent, steady profits rather than spectacular wins followed by big losses.
         </div>
       </Card>
