@@ -9,12 +9,24 @@ import {
   Download,
   FileText,
   FileSpreadsheet,
+  Image,
+  Calendar as CalendarIcon,
+  X,
 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -22,7 +34,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import html2canvas from "html2canvas";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { ExportReport } from "@/components/dashboard/ExportReport";
 import { Loader2 } from "lucide-react";
 
@@ -40,8 +52,52 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
+  // --- Date Range Filter State ---
+  const [dateRangeType, setDateRangeType] = useState<string>("all");
+  const [specificDate, setSpecificDate] = useState<Date | undefined>(undefined);
+  const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(undefined);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showRangePicker, setShowRangePicker] = useState(false);
+
+  // --- Filter Trades Based on Date Range ---
+  const filteredTrades = useMemo(() => {
+    if (!trades) return [];
+    
+    const now = dayjs();
+    
+    switch (dateRangeType) {
+      case "daily":
+        return trades.filter((t: any) => 
+          dayjs(t.close_time).isSame(now, 'day')
+        );
+      case "weekly":
+        return trades.filter((t: any) => 
+          dayjs(t.close_time).isSame(now, 'week')
+        );
+      case "monthly":
+        return trades.filter((t: any) => 
+          dayjs(t.close_time).isSame(now, 'month')
+        );
+      case "specific":
+        if (!specificDate) return trades;
+        return trades.filter((t: any) => 
+          dayjs(t.close_time).isSame(dayjs(specificDate), 'day')
+        );
+      case "range":
+        if (!dateRangeStart || !dateRangeEnd) return trades;
+        return trades.filter((t: any) => {
+          const closeTime = dayjs(t.close_time);
+          return closeTime.isAfter(dayjs(dateRangeStart).startOf('day')) && 
+                 closeTime.isBefore(dayjs(dateRangeEnd).endOf('day'));
+        });
+      default:
+        return trades;
+    }
+  }, [trades, dateRangeType, specificDate, dateRangeStart, dateRangeEnd]);
+
   const handleExportFullCSV = () => {
-    if (!trades || trades.length === 0) return;
+    if (!filteredTrades || filteredTrades.length === 0) return;
 
     const headers = [
       "Ticket",
@@ -58,7 +114,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
       "Reason",
     ];
 
-    const rows = trades.map((t: any) => [
+    const rows = filteredTrades.map((t: any) => [
       t.ticket,
       t.symbol,
       t.type === 0 ? "Buy" : t.type === 1 ? "Sell" : t.type,
@@ -87,7 +143,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
   };
 
   const handleExportFullPDF = async () => {
-    if (!reportRef.current || !trades) return;
+    if (!reportRef.current || !filteredTrades) return;
     setExporting(true);
 
     try {
@@ -116,7 +172,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
         startY += 10;
       }
 
-      const tableData = trades.map((t: any) => [
+      const tableData = filteredTrades.map((t: any) => [
         t.ticket,
         t.symbol,
         t.type === 0 ? "Buy" : "Sell",
@@ -137,6 +193,32 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
       doc.save(`full_report_${accountId}.pdf`);
     } catch (err) {
       console.error("Export failed", err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportFullJPEG = async () => {
+    if (!reportRef.current || !filteredTrades) return;
+    setExporting(true);
+
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = `full_report_${accountId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("JPEG export failed", err);
     } finally {
       setExporting(false);
     }
@@ -247,6 +329,77 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
     doc.save(`trade_report_${trade.ticket || trade.position_id}.pdf`);
   };
 
+  const handleExportJPEG = async (trade: any) => {
+    // Create a temporary container for the trade report
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.width = "800px";
+    container.style.padding = "40px";
+    container.style.backgroundColor = "#ffffff";
+    container.style.fontFamily = "Arial, sans-serif";
+    
+    const isProfit = Number(trade.profit) > 0;
+    const color = isProfit ? "#22c55e" : "#ef4444";
+    
+    container.innerHTML = `
+      <div style="background: #f0f0f0; padding: 20px; margin-bottom: 20px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 28px; color: #282828;">Trade Report</h1>
+        <p style="margin: 0; color: #646464; font-size: 14px;">Ticket: ${trade.ticket || trade.position_id}</p>
+        <p style="margin: 0; color: #646464; font-size: 14px;">Generated: ${dayjs().format("YYYY-MM-DD HH:mm")}</p>
+      </div>
+      
+      <div style="border-top: 3px solid ${color}; padding-top: 20px; margin-bottom: 20px;">
+        <h2 style="font-size: 20px; margin: 0 0 10px 0;">${trade.symbol} - ${trade.type === 0 ? "BUY" : "SELL"}</h2>
+        <p style="font-size: 18px; font-weight: bold; color: ${color}; margin: 0;">${Number(trade.profit).toFixed(2)} USD</p>
+      </div>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <tr style="background: #f5f5f5;">
+          <th style="padding: 12px; text-align: left; border: 1px solid #ddd; font-weight: bold;">Metric</th>
+          <th style="padding: 12px; text-align: left; border: 1px solid #ddd; font-weight: bold;">Value</th>
+        </tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Open Time</td><td style="padding: 10px; border: 1px solid #ddd;">${dayjs(trade.open_time).format("YYYY-MM-DD HH:mm:ss")}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Close Time</td><td style="padding: 10px; border: 1px solid #ddd;">${dayjs(trade.close_time).format("YYYY-MM-DD HH:mm:ss")}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Open Price</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.open_price).toFixed(5)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Close Price</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.close_price).toFixed(5)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Volume</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.volume).toFixed(2)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Commission</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.commission).toFixed(2)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Swap</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.swap).toFixed(2)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">Close Reason</td><td style="padding: 10px; border: 1px solid #ddd;">${trade.close_reason || "-"}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">TP</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.tp_price || 0).toFixed(5)}</td></tr>
+        <tr><td style="padding: 10px; border: 1px solid #ddd;">SL</td><td style="padding: 10px; border: 1px solid #ddd;">${Number(trade.sl_price || 0).toFixed(5)}</td></tr>
+      </table>
+      
+      <div style="margin-top: 40px; text-align: center; color: #969696; font-size: 12px;">
+        Generated by Trading Journal App
+      </div>
+    `;
+    
+    document.body.appendChild(container);
+    
+    try {
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = `trade_report_${trade.ticket || trade.position_id}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("JPEG export failed", err);
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card className="p-4 border border-dashed rounded-2xl bg-secondary/20 text-center text-muted-foreground font-medium animate-pulse">
@@ -265,41 +418,156 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
 
   return (
     <Card className="p-4 rounded-2xl border border-[#E5E7EB] bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
-      <div className="flex justify-end mb-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" disabled={exporting}>
-                {exporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                Export History
+      <div className="flex justify-between items-start mb-4 gap-4">
+        {/* Date Range Filter */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={dateRangeType} onValueChange={(value) => {
+            setDateRangeType(value);
+            if (value === "specific") {
+              setShowDatePicker(true);
+            } else if (value === "range") {
+              setShowRangePicker(true);
+            }
+          }}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Trades</SelectItem>
+              <SelectItem value="daily">Today</SelectItem>
+              <SelectItem value="weekly">This Week</SelectItem>
+              <SelectItem value="monthly">This Month</SelectItem>
+              <SelectItem value="specific">Specific Date</SelectItem>
+              <SelectItem value="range">Date Range</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Specific Date Picker */}
+          {dateRangeType === "specific" && (
+            <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {specificDate ? dayjs(specificDate).format("MMM DD, YYYY") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={specificDate}
+                  onSelect={(date) => {
+                    setSpecificDate(date);
+                    setShowDatePicker(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Date Range Picker */}
+          {dateRangeType === "range" && (
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    {dateRangeStart ? dayjs(dateRangeStart).format("MMM DD") : "Start"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dateRangeStart}
+                    onSelect={setDateRangeStart}
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <span className="text-muted-foreground">to</span>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    {dateRangeEnd ? dayjs(dateRangeEnd).format("MMM DD") : "End"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dateRangeEnd}
+                    onSelect={setDateRangeEnd}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {(dateRangeStart || dateRangeEnd) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setDateRangeStart(undefined);
+                    setDateRangeEnd(undefined);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Active Filter Display */}
+          {dateRangeType !== "all" && (
+            <div className="text-sm text-muted-foreground">
+              {filteredTrades.length} of {trades?.length || 0} trades
+            </div>
+          )}
+        </div>
+
+        {/* Export Button */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" disabled={exporting}>
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export History
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-2">
+            <div className="flex flex-col gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start gap-2"
+                onClick={handleExportFullPDF}
+              >
+                <FileText className="h-4 w-4" />
+                PDF Report
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2">
-              <div className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2"
-                  onClick={handleExportFullPDF}
-                >
-                  <FileText className="h-4 w-4" />
-                  PDF Report
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start gap-2"
-                  onClick={handleExportFullCSV}
-                >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  CSV Data
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start gap-2"
+                onClick={handleExportFullJPEG}
+              >
+                <Image className="h-4 w-4" />
+                JPEG Image
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start gap-2"
+                onClick={handleExportFullCSV}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                CSV Data
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="overflow-x-auto rounded-xl border border-border/60">
         <table className="min-w-full text-sm table-fixed">
@@ -317,7 +585,7 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
           </thead>
 
           <tbody className="divide-y divide-[#E5E7EB] text-gray-700">
-            {trades.map((trade: any) => {
+            {filteredTrades.map((trade: any) => {
               const isProfit = Number(trade.profit) > 0;
               const profitColor = isProfit ? "text-green-600" : "text-red-600";
 
@@ -456,6 +724,15 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                             >
                               <FileText className="h-4 w-4" />
                               PDF
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start gap-2"
+                              onClick={() => handleExportJPEG(trade)}
+                            >
+                              <Image className="h-4 w-4" />
+                              JPEG
                             </Button>
                             <Button
                               variant="ghost"
