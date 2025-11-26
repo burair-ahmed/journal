@@ -319,7 +319,7 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
 
           {riskMetrics.avgRR < 1.5 && (
             <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">
-              💡 <strong>Guidance:</strong> Aim for at least 1.5:1 R:R ratio to improve profitability
+              <strong>Guidance:</strong> Aim for at least 1.5:1 R:R ratio to improve profitability
             </div>
           )}
         </Card>
@@ -356,7 +356,7 @@ export const RiskManagement = ({ accountId }: RiskManagementProps) => {
 
         {riskMetrics.longestLossStreak > 3 && (
           <div className="p-3 bg-secondary/20 rounded-lg text-sm text-muted-foreground">
-            💡 After a {riskMetrics.longestLossStreak}-trade losing streak, consider taking a break to reset emotionally and review your strategy.
+            After a {riskMetrics.longestLossStreak}-trade losing streak, consider taking a break to reset emotionally and review your strategy.
           </div>
         )}
       </Card>

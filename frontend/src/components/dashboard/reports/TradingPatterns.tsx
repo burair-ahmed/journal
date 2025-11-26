@@ -61,7 +61,7 @@ export const TradingPatterns = ({ accountId }: TradingPatternsProps) => {
 
       {/* A. Symbol Performance Panel */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">📊 Top 10 Symbol Performance</h3>
+        <h3 className="text-xl font-semibold">Top 10 Symbol Performance</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {symbolStats.map((symbol, index) => (
             <SymbolPerformanceCard

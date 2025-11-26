@@ -32,7 +32,7 @@ export const ConsistencyPanel = ({ consistencyScore, stdDev, variance, trendData
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
-          <h3 className="text-xl font-semibold">📊 Trading Consistency Report</h3>
+          <h3 className="text-xl font-semibold">Trading Consistency Report</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -70,7 +70,7 @@ export const ConsistencyPanel = ({ consistencyScore, stdDev, variance, trendData
         )}
 
         <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">
-          💡 <strong>Tip:</strong> Aim for consistent, steady profits rather than spectacular wins followed by big losses.
+          <strong>Tip:</strong> Aim for consistent, steady profits rather than spectacular wins followed by big losses.
         </div>
       </div>
     </Card>

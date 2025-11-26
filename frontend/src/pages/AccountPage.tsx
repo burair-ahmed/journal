@@ -252,9 +252,9 @@ export const AccountPage = () => {
           <p>Loading...</p>
         ) : (
           <div className="space-y-2">
-            <p>💰 Total Profit: {totalProfit.toFixed(2)}</p>
-            <p>✅ Win Rate: {winRate.toFixed(1)}%</p>
-            <p>📊 Total Trades: {trades?.length ?? 0}</p>
+            <p>Total Profit: {totalProfit.toFixed(2)}</p>
+            <p>Win Rate: {winRate.toFixed(1)}%</p>
+            <p>Total Trades: {trades?.length ?? 0}</p>
           </div>
         )}
       </Card>

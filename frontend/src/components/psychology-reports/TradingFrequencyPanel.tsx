@@ -69,7 +69,7 @@ export const TradingFrequencyPanel = ({ avgTradesPerDay, frequencyLevel }: Tradi
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
-          <h3 className="text-xl font-semibold">📅 Trading Frequency Analysis</h3>
+          <h3 className="text-xl font-semibold">Trading Frequency Analysis</h3>
         </div>
 
         <div className="text-center space-y-3">

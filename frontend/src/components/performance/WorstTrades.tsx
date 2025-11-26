@@ -29,7 +29,7 @@ export const WorstTrades = ({ trades }: WorstTradesProps) => {
     <Card className="p-6 space-y-4">
       <div className="flex items-center gap-2">
         <TrendingDown className="h-5 w-5 text-loss" />
-        <h3 className="text-xl font-semibold">😞 Top 10 Losing Trades</h3>
+        <h3 className="text-xl font-semibold">Top 10 Losing Trades</h3>
       </div>
 
       <div className="space-y-2 max-h-[500px] overflow-y-auto">

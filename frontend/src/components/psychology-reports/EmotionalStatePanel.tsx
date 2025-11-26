@@ -18,7 +18,7 @@ export const EmotionalStatePanel = ({ alerts }: EmotionalStatePanelProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold">😰 Emotional State & Alerts</h3>
+      <h3 className="text-xl font-semibold">Emotional State & Alerts</h3>
       <div className="space-y-3">
         {alerts.map((alert, index) => {
           const colorClass = getSeverityColor(alert.severity);
