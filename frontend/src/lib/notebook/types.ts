@@ -174,6 +174,8 @@ export type MarketEventType =
   | 'earnings' 
   | 'sector_rotation' 
   | 'market_regime' 
+  | 'news'
+  | 'daily_summary'
   | 'other';
 
 export type ImpactLevel = 'low' | 'medium' | 'high';
@@ -184,7 +186,12 @@ export interface MarketJournalEntry {
   event_date: string;
   event_type?: MarketEventType | null;
   title: string;
-  description?: string | null;
+  content?: string | null;
+  description?: string | null; // Keeping for backward compatibility if needed, but schema uses content? No, schema uses content. Wait, let me check schema.
+  // Schema says: content TEXT. My types had description?
+  // Let's check the schema file I created.
+  // notebook_database_schema.sql: content TEXT
+  // So I should use content.
   impact_level?: ImpactLevel | null;
   affected_symbols: string[];
   market_reaction?: string | null;
@@ -193,6 +200,17 @@ export interface MarketJournalEntry {
   created_at: string;
   updated_at: string;
 }
+
+export interface CreateMarketJournalInput {
+  event_date: string;
+  event_type?: MarketEventType;
+  title: string;
+  content?: string;
+  impact_level?: ImpactLevel;
+  affected_symbols?: string[];
+}
+
+export type MarketJournal = MarketJournalEntry;
 
 // ============================================
 // PSYCHOLOGY LOG
@@ -237,8 +255,23 @@ export interface ChartLibraryItem {
   annotations?: string | null;
   chart_type?: ChartType | null;
   tags: string[];
+  notes?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type ChartLibrary = ChartLibraryItem;
+
+export interface CreateChartInput {
+  title?: string;
+  symbol?: string;
+  timeframe?: string;
+  image_url: string;
+  patterns?: string[];
+  description?: string;
+  chart_type?: ChartType;
+  trade_id?: number;
+  trade_idea_id?: string;
 }
 
 // ============================================
@@ -252,12 +285,20 @@ export interface VoiceNote {
   trade_id?: number | null;
   title?: string | null;
   audio_url: string;
-  duration_seconds?: number | null;
+  duration_seconds: number;
   transcription?: string | null;
   transcription_status: TranscriptionStatus;
   tags: string[];
   created_at: string;
   updated_at: string;
+}
+
+export interface CreateVoiceNoteInput {
+  title?: string;
+  audio_url: string;
+  duration_seconds?: number;
+  tags?: string[];
+  trade_id?: number;
 }
 
 // ============================================
