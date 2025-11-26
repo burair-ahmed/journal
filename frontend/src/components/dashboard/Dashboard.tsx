@@ -21,6 +21,7 @@ import { TradesTable } from "./TradesTable";
 import { WinLossSymbolDistribution } from "./widgets/WinLossSymbolDistribution";
 import { NewsFeed } from "./NewsFeed";
 import { ExportReport } from "./ExportReport";
+import { NotebookContainer } from "@/components/notebook/NotebookContainer";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
@@ -87,6 +88,10 @@ const DashboardContent = () => {
 
         case "insights":
         return <NewsFeed />;
+        
+        case "notebook":
+        return <NotebookContainer />;
+        
         case "reports":
         return <ExportReport/>
       default:

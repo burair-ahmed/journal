@@ -755,7 +755,10 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
         </table>
       </div>
 
-      <ExportReport ref={reportRef} accountId={accountId} />
+      {/* Hidden Export Report - Only used for PDF/JPEG generation */}
+      <div className="hidden">
+        <ExportReport ref={reportRef} accountId={accountId} />
+      </div>
     </Card>
   );
 };
