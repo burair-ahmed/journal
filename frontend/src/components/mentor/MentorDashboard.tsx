@@ -19,10 +19,15 @@ dayjs.extend(relativeTime);
 
 export const MentorDashboard: React.FC = () => {
   const { myMentees, isLoading, acceptInvite, rejectInvite } = useMentorships();
-  const { setActiveView } = useUI();
+  const { setActiveView, setMenteeViewId } = useUI();
 
   const pendingInvites = myMentees.filter((m) => m.status === "pending");
   const activeMentees = myMentees.filter((m) => m.status === "active");
+
+  const handleViewDashboard = (menteeId: string) => {
+    setMenteeViewId(menteeId);
+    setActiveView('menteeView');
+  };
 
   return (
     <div className="h-full flex flex-col space-y-6 p-6 overflow-y-auto">
@@ -107,11 +112,7 @@ export const MentorDashboard: React.FC = () => {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => {
-                      // Navigate to a mentee-specific view (to be implemented)
-                      // For now, just show a toast
-                      alert(`Viewing dashboard for ${mentorship.mentee_email || 'student'}`);
-                    }}
+                    onClick={() => handleViewDashboard(mentorship.mentee_id)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     View Dashboard

@@ -23,6 +23,7 @@ import { NewsFeed } from "./NewsFeed";
 import { ExportReport } from "./ExportReport";
 import { NotebookContainer } from "@/components/notebook/NotebookContainer";
 import { MentorModeDashboard } from "@/components/mentor/MentorModeDashboard";
+import { MenteeDetailView } from "@/components/mentor/MenteeDetailView";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
@@ -136,6 +137,10 @@ const DashboardContent = () => {
 
         case "mentorMode":
         return <MentorModeDashboard />;
+        
+        case "menteeView":
+        return <MenteeDetailView />;
+        
       default:
         return (
           <div className="text-center text-foreground mt-20">

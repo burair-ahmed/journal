@@ -12,6 +12,7 @@ type View =
   | "tradeReplay"
   | "challenges"
   | "mentorMode"
+  | "menteeView"
   | "university"
   | "resourceCenter"
   | "addAccount"
@@ -22,15 +23,18 @@ type View =
 interface UIContextType {
   activeView: View;
   setActiveView: (view: View) => void;
+  menteeViewId: string | null;
+  setMenteeViewId: (id: string | null) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [activeView, setActiveView] = useState<View>("dashboard");
+  const [menteeViewId, setMenteeViewId] = useState<string | null>(null);
 
   return (
-    <UIContext.Provider value={{ activeView, setActiveView }}>
+    <UIContext.Provider value={{ activeView, setActiveView, menteeViewId, setMenteeViewId }}>
       {children}
     </UIContext.Provider>
   );

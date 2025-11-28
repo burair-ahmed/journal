@@ -41,18 +41,21 @@ export function useNotifications() {
       if (invitesError) throw invitesError;
 
       if (invites) {
-        invites.forEach((invite) => {
+        // Fetch emails for each invite
+        for (const invite of invites) {
+          const { data: email } = await supabase.rpc('get_user_email_by_id', { user_uuid: invite.mentee_id });
+          
           allNotifications.push({
             id: `invite-${invite.id}`,
             type: 'mentor_invite',
             title: 'New Mentor Invitation',
-            message: `You have a new mentorship request`,
+            message: `${email || 'A student'} wants you to be their mentor`,
             created_at: invite.created_at,
             read: false,
             link: '/mentorship?tab=my-mentees',
             metadata: invite,
           });
-        });
+        }
       }
 
       // 2. Fetch new assignments (where I'm the mentee)
