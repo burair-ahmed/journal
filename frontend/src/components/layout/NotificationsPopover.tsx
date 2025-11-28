@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useMentorships } from "@/hooks/mentor/useMentorships";
-import { Bell, Users, ClipboardList, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, Users, ClipboardList, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,14 @@ export const NotificationsPopover: React.FC = () => {
         return <Users className="h-4 w-4 text-primary" />;
       case "assignment":
         return <ClipboardList className="h-4 w-4 text-secondary" />;
+      case "assignment_submission":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case "assignment_review":
+        return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
+      case "question":
+        return <MessageCircle className="h-4 w-4 text-yellow-500" />;
+      case "question_response":
+        return <MessageCircle className="h-4 w-4 text-green-500" />;
       default:
         return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
@@ -128,15 +136,15 @@ export const NotificationsPopover: React.FC = () => {
                         </div>
                       )}
 
-                      {/* View button for assignments */}
-                      {notification.type === "assignment" && notification.link && (
+                      {/* View button for assignments and other links */}
+                      {notification.type !== "mentor_invite" && notification.link && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full"
+                          className="w-full mt-2"
                           onClick={() => navigate(notification.link!)}
                         >
-                          View Assignment
+                          View Details
                         </Button>
                       )}
                     </div>

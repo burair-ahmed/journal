@@ -26,6 +26,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           <Route path="/accounts/:id" element={<AccountPage />} />
+          <Route path="/mentorship" element={<Index />} />
           <Route path="/mentor/access/:token" element={<MentorSharedView />} />
         </Routes>
 

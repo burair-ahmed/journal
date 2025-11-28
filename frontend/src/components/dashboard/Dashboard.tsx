@@ -10,7 +10,8 @@ import { AccountsManager } from "./AccountsManager";
 import { AccountProvider, useAccountContext } from "@/contexts/AccountContext";
 import { UIProvider, useUI } from "@/contexts/UIContext";
 import { TimeOfDayHeatmap } from "./widgets/TimeOfDayHeatmap";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useTrades } from "@/hooks/useTrades";
 import { AccountBalanceWidget } from "./widgets/AccountBalanceWidget";
 import { TradeWinWidget } from "./widgets/TradeWinWidget";
@@ -26,9 +27,17 @@ import { MentorModeDashboard } from "@/components/mentor/MentorModeDashboard";
 import { MenteeDetailView } from "@/components/mentor/MenteeDetailView";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
-  const { activeView } = useUI();
+  const { activeView, setActiveView } = useUI();
   const { id } = useParams();
+  const location = useLocation();
   const accountId = id ? Number(id) : undefined;
+
+  // Sync activeView with URL path
+  useEffect(() => {
+    if (location.pathname === '/mentorship') {
+      setActiveView('mentorMode');
+    }
+  }, [location.pathname, setActiveView]);
 
   // Fetch trades for this account
   const { data: trades = [], isLoading, error } = useTrades(accountId);

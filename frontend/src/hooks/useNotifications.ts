@@ -8,7 +8,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 
 export interface Notification {
   id: string;
-  type: 'mentor_invite' | 'assignment' | 'request_reviewed';
+  type: 'mentor_invite' | 'assignment' | 'assignment_submission' | 'assignment_review' | 'question' | 'question_response' | 'request_reviewed';
   title: string;
   message: string;
   created_at: string;
@@ -63,7 +63,7 @@ export function useNotifications() {
         .from('mentor_assignments')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'pending')
+        .eq('status', 'assigned') // Changed from 'pending' to 'assigned' based on new schema
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -84,6 +84,104 @@ export function useNotifications() {
         });
       }
 
+      // 3. Fetch assignment submissions (where I'm the mentor)
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('mentor_assignments')
+        .select('*')
+        .eq('mentor_id', user.id)
+        .eq('status', 'submitted')
+        .order('submitted_at', { ascending: false })
+        .limit(5);
+
+      if (!submissionsError && submissions) {
+        for (const submission of submissions) {
+          const { data: mentee } = await supabase.from('users').select('email').eq('id', submission.user_id).single();
+          allNotifications.push({
+            id: `submission-${submission.id}`,
+            type: 'assignment_submission',
+            title: 'Assignment Submitted',
+            message: `${mentee?.email || 'Mentee'} submitted "${submission.title}"`,
+            created_at: submission.submitted_at || submission.updated_at,
+            read: false,
+            link: '/mentorship?tab=my-mentees&subtab=assignments',
+            metadata: submission,
+          });
+        }
+      }
+
+      // 4. Fetch assignment reviews (where I'm the mentee)
+      const { data: reviews, error: reviewsError } = await supabase
+        .from('mentor_assignments')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'reviewed')
+        .order('reviewed_at', { ascending: false })
+        .limit(5);
+
+      if (!reviewsError && reviews) {
+        reviews.forEach((review) => {
+          allNotifications.push({
+            id: `review-${review.id}`,
+            type: 'assignment_review',
+            title: 'Assignment Reviewed',
+            message: `Your assignment "${review.title}" has been reviewed`,
+            created_at: review.reviewed_at || review.updated_at,
+            read: false,
+            link: '/mentorship?tab=assignments',
+            metadata: review,
+          });
+        });
+      }
+
+      // 5. Fetch new questions (where I'm the mentor)
+      const { data: questions, error: questionsError } = await supabase
+        .from('mentor_requests')
+        .select('*')
+        .eq('mentor_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!questionsError && questions) {
+        for (const question of questions) {
+          const { data: mentee } = await supabase.from('users').select('email').eq('id', question.user_id).single();
+          allNotifications.push({
+            id: `question-${question.id}`,
+            type: 'question',
+            title: 'New Question',
+            message: `${mentee?.email || 'Mentee'} asked: "${question.question.substring(0, 30)}..."`,
+            created_at: question.created_at,
+            read: false,
+            link: '/mentorship?tab=my-mentees&subtab=questions',
+            metadata: question,
+          });
+        }
+      }
+
+      // 6. Fetch question responses (where I'm the mentee)
+      const { data: responses, error: responsesError } = await supabase
+        .from('mentor_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'reviewed')
+        .order('responded_at', { ascending: false })
+        .limit(5);
+
+      if (!responsesError && responses) {
+        responses.forEach((response) => {
+          allNotifications.push({
+            id: `response-${response.id}`,
+            type: 'question_response',
+            title: 'Question Answered',
+            message: `Mentor answered: "${response.question.substring(0, 30)}..."`,
+            created_at: response.responded_at || response.updated_at,
+            read: false,
+            link: '/mentorship?tab=ask-mentor',
+            metadata: response,
+          });
+        });
+      }
+
       // Sort by created_at
       allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -99,7 +197,7 @@ export function useNotifications() {
   useEffect(() => {
     fetchNotifications();
 
-    // Set up real-time subscription for new invites
+    // Set up real-time subscription for new invites, assignments, and requests
     const channel = supabase
       .channel('notifications')
       .on(
@@ -110,21 +208,47 @@ export function useNotifications() {
           table: 'mentorships',
           filter: `mentor_id=eq.${user?.id}`,
         },
-        () => {
-          fetchNotifications();
-        }
+        () => fetchNotifications()
       )
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'mentor_assignments',
           filter: `user_id=eq.${user?.id}`,
         },
-        () => {
-          fetchNotifications();
-        }
+        () => fetchNotifications()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mentor_assignments',
+          filter: `mentor_id=eq.${user?.id}`,
+        },
+        () => fetchNotifications()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mentor_requests',
+          filter: `mentor_id=eq.${user?.id}`,
+        },
+        () => fetchNotifications()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mentor_requests',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        () => fetchNotifications()
       )
       .subscribe();
 
