@@ -22,6 +22,7 @@ import { WinLossSymbolDistribution } from "./widgets/WinLossSymbolDistribution";
 import { NewsFeed } from "./NewsFeed";
 import { ExportReport } from "./ExportReport";
 import { NotebookContainer } from "@/components/notebook/NotebookContainer";
+import { MentorModeDashboard } from "@/components/mentor/MentorModeDashboard";
 const DashboardContent = () => {
   const { selectedAccountId } = useAccountContext();
   const { activeView } = useUI();
@@ -43,6 +44,7 @@ const DashboardContent = () => {
     );
   }
 
+
   if (trades.length === 0) {
     return (
       <div className="p-6 text-muted-foreground">
@@ -52,8 +54,15 @@ const DashboardContent = () => {
   }
   const renderContent = () => {
     switch (activeView) {
-      case "dashboard":
+      case "dashboard":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return (
+          
           <>
             <div className="grid grid-cols-3 gap-6 mb-8">
               {/* <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo /> */}
@@ -77,23 +86,56 @@ const DashboardContent = () => {
           </>
         );
 
-      case "addAccount":
+      case "addAccount":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return <AccountsManager />;
 
-      case "trades":
+      case "trades":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return <TradesTable accountId={selectedAccountId} />;
 
       case "profile":
         return <UserProfile />;
 
-        case "insights":
+        case "insights":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return <NewsFeed />;
         
-        case "notebook":
+        case "notebook":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return <NotebookContainer />;
         
-        case "reports":
+        case "reports":  if (!selectedAccountId) {
+    return (
+      <div className="text-center text-muted-foreground p-10">
+        No account selected — choose an account from the top bar.
+      </div>
+    );
+  }
         return <ExportReport/>
+
+        case "mentorMode":
+        return <MentorModeDashboard />;
       default:
         return (
           <div className="text-center text-foreground mt-20">

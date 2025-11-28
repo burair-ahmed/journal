@@ -14,6 +14,7 @@ import { useAccountContext } from "@/contexts/AccountContext";
 import { syncTrades } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import { NotificationsPopover } from "./NotificationsPopover";
 
 export const TopHeader = () => {
   const {
@@ -149,9 +150,7 @@ const handleSync = async () => {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationsPopover />
         </div>
       </div>
     </div>

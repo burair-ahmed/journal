@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import { AccountPage } from "./pages/AccountPage";
 // import { ToastProvider } from "@radix-ui/react-toast";
 import { ToasterProvider } from "./components/ui/ToasterProvider";
+import { MentorSharedView } from "./components/mentor/MentorSharedView";
 // import { AccountsManager } from "./components/dashboard/AccountsManager";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           <Route path="/accounts/:id" element={<AccountPage />} />
+          <Route path="/mentor/access/:token" element={<MentorSharedView />} />
         </Routes>
 
         {/* ✅ Place TradesSync inside Router (so it can use navigation if needed) */}
