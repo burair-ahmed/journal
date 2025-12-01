@@ -118,9 +118,6 @@ export function useAuth() {
   // Impersonation Actions
   const startImpersonation = async (menteeId: string, menteeEmail: string) => {
     try {
-      console.log('🔍 Starting impersonation for:', menteeId, menteeEmail);
-      console.log('🔍 Current user:', user?.id);
-      
       // Fetch the mentorship to get permissions
       const { data: mentorship, error } = await supabase
         .from('mentorships')
@@ -130,17 +127,13 @@ export function useAuth() {
         .eq('status', 'active')
         .single();
 
-      console.log('🔍 Fetched mentorship:', mentorship);
-      console.log('🔍 Mentorship error:', error);
-      console.log('🔍 Permissions:', mentorship?.permissions);
-
       if (error) throw error;
 
       setImpersonatedMentorship(mentorship);
       setImpersonatedUserId(menteeId);
       setImpersonatedUserEmail(menteeEmail);
     } catch (error) {
-      console.error('❌ Failed to fetch mentorship:', error);
+      console.error('Failed to fetch mentorship:', error);
       // Still set basic impersonation even if mentorship fetch fails (legacy support)
       setImpersonatedUserId(menteeId);
       setImpersonatedUserEmail(menteeEmail);
@@ -148,7 +141,6 @@ export function useAuth() {
   };
 
   const stopImpersonation = () => {
-    console.log('🛑 Stopping impersonation');
     setImpersonatedUserId(null);
     setImpersonatedUserEmail(null);
     setImpersonatedMentorship(null);

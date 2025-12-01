@@ -65,25 +65,14 @@ export const Sidebar = () => {
     // If not impersonating, show all items
     if (!isImpersonating) return true;
     
-    console.log('🎯 Sidebar filtering - isImpersonating:', isImpersonating);
-    console.log('🎯 Mentorship:', impersonatedMentorship);
-    console.log('🎯 Checking item:', item.id);
-    
     // During impersonation, check permissions
     const allowedTabs = impersonatedMentorship?.permissions?.allowed_tabs;
     
-    console.log('🎯 Allowed tabs:', allowedTabs);
-    
     // If no allowed_tabs defined (legacy mentorship), show all
-    if (!allowedTabs || allowedTabs.length === 0) {
-      console.log('🎯 No restrictions - showing all');
-      return true;
-    }
+    if (!allowedTabs || allowedTabs.length === 0) return true;
     
     // Check if this item's ID is in allowed tabs
-    const isAllowed = allowedTabs.includes(item.id);
-    console.log('🎯 Item', item.id, 'allowed:', isAllowed);
-    return isAllowed;
+    return allowedTabs.includes(item.id);
   });
 
   return (
