@@ -12,6 +12,7 @@ import { AvatarControl } from "./AvatarControl";
 import { IdentityHeader } from "./IdentityHeader";
 import { IdentityForm } from "./IdentityForm";
 import { ProfileActions } from "./ProfileActions";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface ProfileContainerProps {
   user: User;
@@ -20,6 +21,7 @@ interface ProfileContainerProps {
 
 export const ProfileContainer: React.FC<ProfileContainerProps> = ({ user, setUser }) => {
   const { toast } = useToast();
+  const { isImpersonating } = useAuthContext();
   const [saving, setSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -118,7 +120,7 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({ user, setUse
           p-6 md:p-10 relative"
       >
         {/* Edit Button */}
-        {!isEditMode && (
+        {!isEditMode && !isImpersonating && (
           <motion.button
             onClick={() => setIsEditMode(true)}
             whileHover={{ scale: 1.05 }}

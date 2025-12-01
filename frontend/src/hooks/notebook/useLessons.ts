@@ -9,20 +9,20 @@ import { useToast } from '@/components/ui/use-toast';
 import type { LessonLearned, CreateLessonInput, LessonFilters } from '@/lib/notebook/types';
 
 export function useLessons(filters?: LessonFilters) {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [lessons, setLessons] = useState<LessonLearned[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLessons = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       let query = supabase
         .from('lessons_learned')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (filters?.category) query = query.eq('category', filters.category);
@@ -41,15 +41,15 @@ export function useLessons(filters?: LessonFilters) {
 
   useEffect(() => {
     fetchLessons();
-  }, [user, JSON.stringify(filters)]);
+  }, [effectiveUserId, JSON.stringify(filters)]);
 
   const createLesson = async (input: CreateLessonInput) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('lessons_learned')
-        .insert({ user_id: user.id, ...input })
+        .insert({ user_id: effectiveUserId, ...input })
         .select()
         .single();
 

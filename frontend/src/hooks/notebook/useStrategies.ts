@@ -9,20 +9,20 @@ import { useToast } from '@/components/ui/use-toast';
 import type { TradingStrategy, CreateStrategyInput } from '@/lib/notebook/types';
 
 export function useStrategies() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [strategies, setStrategies] = useState<TradingStrategy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchStrategies = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('trading_strategies')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -36,15 +36,15 @@ export function useStrategies() {
 
   useEffect(() => {
     fetchStrategies();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const createStrategy = async (input: CreateStrategyInput) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('trading_strategies')
-        .insert({ user_id: user.id, ...input })
+        .insert({ user_id: effectiveUserId, ...input })
         .select()
         .single();
 

@@ -9,20 +9,20 @@ import { useToast } from '@/components/ui/use-toast';
 import type { PsychologyLog } from '@/lib/notebook/types';
 
 export function usePsychology() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [logs, setLogs] = useState<PsychologyLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLogs = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('psychology_log')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('log_date', { ascending: false });
 
       if (error) throw error;
@@ -36,7 +36,7 @@ export function usePsychology() {
 
   useEffect(() => {
     fetchLogs();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const createLog = async (input: Partial<PsychologyLog>) => {
     if (!user) return null;

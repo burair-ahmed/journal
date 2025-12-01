@@ -25,8 +25,11 @@ import { ExportReport } from "./ExportReport";
 import { NotebookContainer } from "@/components/notebook/NotebookContainer";
 import { MentorModeDashboard } from "@/components/mentor/MentorModeDashboard";
 import { MenteeDetailView } from "@/components/mentor/MenteeDetailView";
+import { ImpersonationBanner } from "@/components/mentor/ImpersonationBanner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 const DashboardContent = () => {
-  const { selectedAccountId } = useAccountContext();
+  const { selectedAccountId, accounts, isLoadingAccounts } = useAccountContext();
   const { activeView, setActiveView } = useUI();
   const { id } = useParams();
   const location = useLocation();
@@ -55,22 +58,54 @@ const DashboardContent = () => {
   }
 
 
-  if (trades.length === 0) {
-    return (
-      <div className="p-6 text-muted-foreground">
-        No trades found for this account.
-      </div>
-    );
-  }
+  // if (trades.length === 0) {
+  //   return (
+  //     <div className="p-6 text-muted-foreground">
+  //       No trades found for this account.
+  //     </div>
+  //   );
+
   const renderContent = () => {
     switch (activeView) {
-      case "dashboard":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
+      case "dashboard":
+        // Show welcome card for new users without accounts
+        if (!selectedAccountId && !isLoadingAccounts && (!accounts || accounts.length === 0)) {
+          return (
+            <div className="max-w-3xl mx-auto mt-20">
+              <Card className="p-8 border-2 border-dashed border-primary/30">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold">Welcome to Your Trading Journal! 🎉</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Get started by connecting your MT5 trading account. Once connected, your trades will automatically sync and you'll unlock powerful analytics.
+                  </p>
+                  <Button 
+                    className="bg-brand-gradient text-white mt-4"
+                    onClick={() => setActiveView('addAccount')}
+                  >
+                    Connect Your First Account
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          );
+        }
+
+        // Show loading state
+        if (isLoadingAccounts) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center space-y-3">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <p className="text-muted-foreground">Loading your accounts...</p>
+              </div>
+            </div>
+          );
+        }
         return (
           
           <>
@@ -96,13 +131,7 @@ const DashboardContent = () => {
           </>
         );
 
-      case "addAccount":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
+      case "addAccount":
         return <AccountsManager />;
 
       case "trades":  if (!selectedAccountId) {
@@ -172,6 +201,7 @@ const DashboardContent = () => {
           {/* <TradezellaRightSidebar /> */}
         </div>
       </div>
+      <ImpersonationBanner />
     </div>
   );
 };

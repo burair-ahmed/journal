@@ -9,20 +9,20 @@ import { useToast } from '@/components/ui/use-toast';
 import type { MarketJournal, CreateMarketJournalInput } from '@/lib/notebook/types';
 
 export function useMarketJournal() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [entries, setEntries] = useState<MarketJournal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchEntries = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('market_journal')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('event_date', { ascending: false });
 
       if (error) throw error;
@@ -36,7 +36,7 @@ export function useMarketJournal() {
 
   useEffect(() => {
     fetchEntries();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const createEntry = async (input: CreateMarketJournalInput) => {
     if (!user) return null;

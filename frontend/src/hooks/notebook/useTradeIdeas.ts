@@ -9,20 +9,20 @@ import { useToast } from '@/components/ui/use-toast';
 import type { TradeIdea, CreateTradeIdeaInput, IdeaFilters } from '@/lib/notebook/types';
 
 export function useTradeIdeas(filters?: IdeaFilters) {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [ideas, setIdeas] = useState<TradeIdea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchIdeas = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       let query = supabase
         .from('trade_ideas')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (filters?.status) query = query.eq('status', filters.status);
@@ -41,15 +41,15 @@ export function useTradeIdeas(filters?: IdeaFilters) {
 
   useEffect(() => {
     fetchIdeas();
-  }, [user, JSON.stringify(filters)]);
+  }, [effectiveUserId, JSON.stringify(filters)]);
 
   const createIdea = async (input: CreateTradeIdeaInput) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('trade_ideas')
-        .insert({ user_id: user.id, ...input })
+        .insert({ user_id: effectiveUserId, ...input })
         .select()
         .single();
 

@@ -13,19 +13,24 @@ export type Account = {
   created_at: string;
 };
 
+import { useAuthContext } from "@/contexts/AuthContext";
+
 export function useAccounts(userId?: string) {
+  const { effectiveUserId } = useAuthContext();
+  const targetUserId = userId || effectiveUserId;
+
   return useQuery<Account[]>({
-    queryKey: ["accounts", userId],
+    queryKey: ["accounts", targetUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!targetUserId) return [];
       const { data, error } = await supabase
         .from("accounts")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", targetUserId);
       if (error) throw error;
       return data as Account[];
     },
-    enabled: !!userId,
+    enabled: !!targetUserId,
   });
 }
 

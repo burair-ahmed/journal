@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import type { TradingNote, CreateNoteInput, NoteFilters } from '@/lib/notebook/types';
 
 export function useNotes(filters?: NoteFilters) {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [notes, setNotes] = useState<TradingNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,14 +17,14 @@ export function useNotes(filters?: NoteFilters) {
 
   // Fetch notes
   const fetchNotes = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       let query = supabase
         .from('trading_notes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -62,7 +62,7 @@ export function useNotes(filters?: NoteFilters) {
 
   useEffect(() => {
     fetchNotes();
-  }, [user, JSON.stringify(filters)]);
+  }, [effectiveUserId, JSON.stringify(filters)]);
 
   // Create note
   const createNote = async (input: CreateNoteInput) => {

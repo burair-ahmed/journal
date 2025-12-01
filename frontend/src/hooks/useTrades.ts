@@ -28,13 +28,23 @@ export type Trade = {
 // ------------------------------------------
 // ✅ useTrades — all trades per account
 // ------------------------------------------
+import { useAuthContext } from "@/contexts/AuthContext";
+
+// ------------------------------------------
+// ✅ useTrades — all trades per account
+// ------------------------------------------
 export function useTrades(accountId?: number) {
+  const { effectiveUserId } = useAuthContext();
+
   return useQuery<Trade[]>({
-    queryKey: ["trades", accountId],
+    queryKey: ["trades", accountId, effectiveUserId],
     queryFn: async () => {
+      if (!effectiveUserId) return [];
+      
       let query = supabase
         .from("trades")
-        .select("*")
+        .select("*, accounts!inner(user_id)")
+        .eq("accounts.user_id", effectiveUserId)
         .order("close_time", { ascending: false });
 
       if (accountId) query = query.eq("account_id", accountId);
@@ -43,6 +53,7 @@ export function useTrades(accountId?: number) {
       if (error) throw error;
       return data as Trade[];
     },
+    enabled: !!effectiveUserId,
   });
 }
 
@@ -98,12 +109,17 @@ export interface DailyPnLResult {
 }
 
 export function useDailyPnL(month: number, year: number, accountId?: number) {
+  const { effectiveUserId } = useAuthContext();
+
   return useQuery<DailyPnLResult>({
-    queryKey: ["dailyPnL", month, year, accountId],
+    queryKey: ["dailyPnL", month, year, accountId, effectiveUserId],
     queryFn: async () => {
+      if (!effectiveUserId) return { deposit: 0, stats: [] };
+
       let query = supabase
         .from("trades")
-        .select("*")
+        .select("*, accounts!inner(user_id)")
+        .eq("accounts.user_id", effectiveUserId)
         .gte("close_time", `${year}-${String(month + 1).padStart(2, "0")}-01`)
         .lt("close_time", `${year}-${String(month + 2).padStart(2, "0")}-01`)
         .order("close_time", { ascending: true });
@@ -159,5 +175,6 @@ export function useDailyPnL(month: number, year: number, accountId?: number) {
         })),
       };
     },
+    enabled: !!effectiveUserId,
   });
 }

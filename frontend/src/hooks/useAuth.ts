@@ -104,5 +104,38 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { user, loading, login, register, logout, setUser };
+  // Impersonation State
+  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
+  const [impersonatedUserEmail, setImpersonatedUserEmail] = useState<string | null>(null);
+
+  // Computed property for effective user ID
+  const effectiveUserId = impersonatedUserId || user?.id;
+  const isImpersonating = !!impersonatedUserId;
+
+  // Impersonation Actions
+  const startImpersonation = (userId: string, email: string) => {
+    setImpersonatedUserId(userId);
+    setImpersonatedUserEmail(email);
+  };
+
+  const stopImpersonation = () => {
+    setImpersonatedUserId(null);
+    setImpersonatedUserEmail(null);
+  };
+
+  return { 
+    user, 
+    loading, 
+    login, 
+    register, 
+    logout, 
+    setUser,
+    // Impersonation exports
+    impersonatedUserId,
+    impersonatedUserEmail,
+    effectiveUserId,
+    isImpersonating,
+    startImpersonation,
+    stopImpersonation
+  };
 }

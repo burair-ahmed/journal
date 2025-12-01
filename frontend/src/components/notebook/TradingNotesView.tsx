@@ -42,11 +42,13 @@ import {
 import type { NoteType } from "@/lib/notebook/types";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 dayjs.extend(relativeTime);
 
 export const TradingNotesView: React.FC = () => {
   const { notes, isLoading, createNote, updateNote, deleteNote, togglePin, toggleArchive } = useNotes();
+  const { isImpersonating } = useAuthContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<NoteType | "all">("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -172,132 +174,134 @@ export const TradingNotesView: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-brand-gradient text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                New Note
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create Trading Note</DialogTitle>
-                <DialogDescription>
-                  Document your trading observations, analysis, and insights
-                </DialogDescription>
-              </DialogHeader>
+          {!isImpersonating && (
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-brand-gradient text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Note
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create Trading Note</DialogTitle>
+                  <DialogDescription>
+                    Document your trading observations, analysis, and insights
+                  </DialogDescription>
+                </DialogHeader>
 
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Title</label>
-                  <Input
-                    placeholder="Note title..."
-                    value={formData.title}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Type</label>
-                  <Select
-                    value={formData.note_type}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, note_type: value as NoteType }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="observation">Observation</SelectItem>
-                      <SelectItem value="analysis">Analysis</SelectItem>
-                      <SelectItem value="review">Trade Review</SelectItem>
-                      <SelectItem value="strategy">Strategy</SelectItem>
-                      <SelectItem value="lesson">Lesson</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Content</label>
-                  <Textarea
-                    placeholder="Write your note here..."
-                    value={formData.content}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
-                    rows={8}
-                    className="resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Tags</label>
-                  <div className="flex gap-2 mb-2">
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Title</label>
                     <Input
-                      placeholder="Add tag..."
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                      placeholder="Note title..."
+                      value={formData.title}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                     />
-                    <Button type="button" variant="outline" onClick={addTag}>
-                      Add
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Type</label>
+                    <Select
+                      value={formData.note_type}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, note_type: value as NoteType }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="observation">Observation</SelectItem>
+                        <SelectItem value="analysis">Analysis</SelectItem>
+                        <SelectItem value="review">Trade Review</SelectItem>
+                        <SelectItem value="strategy">Strategy</SelectItem>
+                        <SelectItem value="lesson">Lesson</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Content</label>
+                    <Textarea
+                      placeholder="Write your note here..."
+                      value={formData.content}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
+                      rows={8}
+                      className="resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Tags</label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Add tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                      />
+                      <Button type="button" variant="outline" onClick={addTag}>
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="gap-1">
+                          {tag}
+                          <button
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }))
+                            }
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Symbols</label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Add symbol (e.g., EURUSD)..."
+                        value={symbolInput}
+                        onChange={(e) => setSymbolInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSymbol())}
+                      />
+                      <Button type="button" variant="outline" onClick={addSymbol}>
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.symbols.map((symbol) => (
+                        <Badge key={symbol} className="bg-brand-gradient text-white gap-1">
+                          {symbol}
+                          <button
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, symbols: prev.symbols.filter((s) => s !== symbol) }))
+                            }
+                            className="ml-1 hover:opacity-80"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateNote} className="bg-brand-gradient text-white">
+                      Create Note
                     </Button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="gap-1">
-                        {tag}
-                        <button
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }))
-                          }
-                          className="ml-1 hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Symbols</label>
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Add symbol (e.g., EURUSD)..."
-                      value={symbolInput}
-                      onChange={(e) => setSymbolInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSymbol())}
-                    />
-                    <Button type="button" variant="outline" onClick={addSymbol}>
-                      Add
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.symbols.map((symbol) => (
-                      <Badge key={symbol} className="bg-brand-gradient text-white gap-1">
-                        {symbol}
-                        <button
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, symbols: prev.symbols.filter((s) => s !== symbol) }))
-                          }
-                          className="ml-1 hover:opacity-80"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateNote} className="bg-brand-gradient text-white">
-                    Create Note
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -377,32 +381,34 @@ export const TradingNotesView: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => togglePin(note.id, note.is_pinned)}
-                      >
-                        <Pin className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => toggleArchive(note.id, note.is_archived)}
-                      >
-                        <Archive className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => deleteNote(note.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {!isImpersonating && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => togglePin(note.id, note.is_pinned)}
+                        >
+                          <Pin className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => toggleArchive(note.id, note.is_archived)}
+                        >
+                          <Archive className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => deleteNote(note.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </motion.div>

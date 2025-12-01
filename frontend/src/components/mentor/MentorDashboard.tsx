@@ -20,11 +20,14 @@ import { MenteeAssignmentsTab } from "./MenteeAssignmentsTab";
 
 dayjs.extend(relativeTime);
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export const MentorDashboard: React.FC = () => {
   const { myMentees, isLoading, acceptInvite, rejectInvite } = useMentorships();
   const { setActiveView, setMenteeViewId } = useUI();
+  const { startImpersonation } = useAuthContext();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const currentTab = searchParams.get("tab") || "overview";
@@ -36,9 +39,10 @@ export const MentorDashboard: React.FC = () => {
   const pendingInvites = myMentees.filter((m) => m.status === "pending");
   const activeMentees = myMentees.filter((m) => m.status === "active");
 
-  const handleViewDashboard = (menteeId: string) => {
-    setMenteeViewId(menteeId);
-    setActiveView('menteeView');
+  const handleViewDashboard = async (menteeId: string, menteeEmail: string) => {
+    await startImpersonation(menteeId, menteeEmail);
+    setActiveView('dashboard');
+    // navigate('/dashboard');
   };
 
   return (
@@ -143,7 +147,7 @@ export const MentorDashboard: React.FC = () => {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => handleViewDashboard(mentorship.mentee_id)}
+                          onClick={() => handleViewDashboard(mentorship.mentee_id, mentorship.mentee_email || "Student")}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Dashboard

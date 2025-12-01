@@ -20,20 +20,20 @@ export interface CreateGoalInput {
 }
 
 export function useGoals() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchGoals = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('trading_goals')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('target_date', { ascending: true });
 
       if (error) throw error;
@@ -47,16 +47,16 @@ export function useGoals() {
 
   useEffect(() => {
     fetchGoals();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const createGoal = async (input: CreateGoalInput) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('trading_goals')
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           ...input,
           status: 'active',
           progress_percentage: 0

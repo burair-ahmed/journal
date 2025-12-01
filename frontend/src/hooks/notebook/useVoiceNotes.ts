@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import type { VoiceNote, CreateVoiceNoteInput } from '@/lib/notebook/types';
 
 export function useVoiceNotes() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,14 +23,14 @@ export function useVoiceNotes() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchNotes = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('voice_notes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -44,7 +44,7 @@ export function useVoiceNotes() {
 
   useEffect(() => {
     fetchNotes();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const startRecording = async () => {
     try {
@@ -110,14 +110,14 @@ export function useVoiceNotes() {
   };
 
   const saveRecording = async (blob: Blob, metadata: Omit<CreateVoiceNoteInput, 'audio_url' | 'duration_seconds'>) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       setIsUploading(true);
       
       // 1. Upload to Supabase Storage
       const fileName = `${Date.now()}.webm`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${effectiveUserId}/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('voice-notes')
@@ -152,7 +152,7 @@ export function useVoiceNotes() {
       const { data, error } = await supabase
         .from('voice_notes')
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           audio_url: signedUrlData.signedUrl, // Storing signed URL for simplicity
           duration_seconds: recordingTime,
           ...metadata

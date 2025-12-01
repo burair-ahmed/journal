@@ -1,7 +1,7 @@
 // src/contexts/AccountContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAccounts } from "@/hooks/useAccounts";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export type AccountSimple = {
   id: number;
@@ -22,14 +22,18 @@ type AccountContextType = {
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const { data: accounts, isLoading } = useAccounts(user?.id);
+  const { effectiveUserId } = useAuthContext();
+  const { data: accounts, isLoading } = useAccounts(effectiveUserId);
 
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
 
-  // Set default account to first in list when accounts load
+  // Reset account selection when effectiveUserId changes (e.g., impersonation starts/stops)
   useEffect(() => {
+    setSelectedAccountId(null);
+  }, [effectiveUserId]);
+
   // Load from localStorage
+  useEffect(() => {
   const storedAccountId = localStorage.getItem("selectedAccountId");
 
   if (storedAccountId) {

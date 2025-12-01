@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAccounts, useCreateAccount } from "@/hooks/useAccounts";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export const AccountsManager = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isImpersonating } = useAuthContext();
   const { data: accounts, isLoading } = useAccounts(user?.id);
   const createAccount = useCreateAccount();
 
@@ -110,87 +110,89 @@ export const AccountsManager = () => {
       </section>
 
       {/* ➕ Add New Account */}
-      <section>
-        <Card className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2 mb-6">
-              <PlusCircle className="text-[#7D3AEB]" />
-              <h2 className="text-xl font-semibold text-[#1E1E1E]">
-                Add New Account
-              </h2>
-            </div>
-
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="login" className="text-[#6B7280]">MT5 Login</Label>
-                <Input
-                  id="login"
-                  type="number"
-                  value={form.mt5_login}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, mt5_login: e.target.value }))
-                  }
-                  required
-                  className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
-                />
+      {!isImpersonating && (
+        <section>
+          <Card className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2 mb-6">
+                <PlusCircle className="text-[#7D3AEB]" />
+                <h2 className="text-xl font-semibold text-[#1E1E1E]">
+                  Add New Account
+                </h2>
               </div>
 
-              <div>
-                <Label htmlFor="password" className="text-[#6B7280]">MT5 Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={form.mt5_password}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, mt5_password: e.target.value }))
-                  }
-                  required
-                  className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="login" className="text-[#6B7280]">MT5 Login</Label>
+                  <Input
+                    id="login"
+                    type="number"
+                    value={form.mt5_login}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, mt5_login: e.target.value }))
+                    }
+                    required
+                    className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="server" className="text-[#6B7280]">MT5 Server</Label>
-                <Input
-                  id="server"
-                  type="text"
-                  placeholder="e.g., ICMarkets-Demo01"
-                  value={form.mt5_server}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, mt5_server: e.target.value }))
-                  }
-                  required
-                  className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="password" className="text-[#6B7280]">MT5 Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={form.mt5_password}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, mt5_password: e.target.value }))
+                    }
+                    required
+                    className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="alias" className="text-[#6B7280]">Alias (optional)</Label>
-                <Input
-                  id="alias"
-                  type="text"
-                  placeholder="My Demo Account"
-                  value={form.alias}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, alias: e.target.value }))
-                  }
-                  className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="server" className="text-[#6B7280]">MT5 Server</Label>
+                  <Input
+                    id="server"
+                    type="text"
+                    placeholder="e.g., ICMarkets-Demo01"
+                    value={form.mt5_server}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, mt5_server: e.target.value }))
+                    }
+                    required
+                    className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
+                  />
+                </div>
 
-              <div className="md:col-span-2 flex justify-end mt-4">
-                <Button
-                  type="submit"
-                  disabled={createAccount.isPending}
-                  className="bg-[#7D3AEB] hover:bg-[#D946EF] text-white px-6 py-2 rounded-xl transition-all"
-                >
-                  {createAccount.isPending ? "Adding..." : "Add Account"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </section>
+                <div>
+                  <Label htmlFor="alias" className="text-[#6B7280]">Alias (optional)</Label>
+                  <Input
+                    id="alias"
+                    type="text"
+                    placeholder="My Demo Account"
+                    value={form.alias}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, alias: e.target.value }))
+                    }
+                    className="border-[#E5E7EB] focus:border-[#7D3AEB] focus:ring-[#7D3AEB]"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end mt-4">
+                  <Button
+                    type="submit"
+                    disabled={createAccount.isPending}
+                    className="bg-[#7D3AEB] hover:bg-[#D946EF] text-white px-6 py-2 rounded-xl transition-all"
+                  >
+                    {createAccount.isPending ? "Adding..." : "Add Account"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 };

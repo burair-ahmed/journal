@@ -21,20 +21,20 @@ export interface CreateResearchInput {
 }
 
 export function useResearch() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [clippings, setClippings] = useState<ResearchClipping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchClippings = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('research_clippings')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -48,16 +48,16 @@ export function useResearch() {
 
   useEffect(() => {
     fetchClippings();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const createClipping = async (input: CreateResearchInput) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('research_clippings')
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           ...input,
           reading_status: 'to_read'
         })

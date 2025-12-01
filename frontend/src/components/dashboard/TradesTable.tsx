@@ -37,6 +37,7 @@ import html2canvas from "html2canvas";
 import { useRef, useState, useMemo } from "react";
 import { ExportReport } from "@/components/dashboard/ExportReport";
 import { Loader2 } from "lucide-react";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -47,6 +48,7 @@ interface TradesTableProps {
 
 export const TradesTable = ({ accountId }: TradesTableProps) => {
   const { trades, isLoading } = useFilteredTrades(accountId);
+  const { isImpersonating } = useAuthContext();
 
   // --- Full History Export Handlers ---
   const reportRef = useRef<HTMLDivElement>(null);
@@ -706,7 +708,9 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                   {/* Actions */}
                   <td className="px-5 py-3 text-right align-top">
                     <div className="flex items-center justify-end gap-3">
-                      <Edit3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      {!isImpersonating && (
+                        <Edit3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      )}
                       <BarChart3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                       <LineChart className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                       

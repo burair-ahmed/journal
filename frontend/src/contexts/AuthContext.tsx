@@ -8,6 +8,13 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  // Impersonation
+  impersonatedUserId: string | null;
+  impersonatedUserEmail: string | null;
+  effectiveUserId: string | undefined;
+  isImpersonating: boolean;
+  startImpersonation: (userId: string, email: string) => void;
+  stopImpersonation: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

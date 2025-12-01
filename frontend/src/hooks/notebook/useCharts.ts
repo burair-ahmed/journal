@@ -9,21 +9,21 @@ import { useToast } from '@/components/ui/use-toast';
 import type { ChartLibrary, CreateChartInput } from '@/lib/notebook/types';
 
 export function useCharts() {
-  const { user } = useAuthContext();
+  const { effectiveUserId } = useAuthContext();
   const { toast } = useToast();
   const [charts, setCharts] = useState<ChartLibrary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
   const fetchCharts = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('chart_library')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -37,10 +37,10 @@ export function useCharts() {
 
   useEffect(() => {
     fetchCharts();
-  }, [user]);
+  }, [effectiveUserId]);
 
   const uploadChart = async (file: File, metadata: Omit<CreateChartInput, 'image_url'>) => {
-    if (!user) return null;
+    if (!effectiveUserId) return null;
 
     try {
       setIsUploading(true);
@@ -48,7 +48,7 @@ export function useCharts() {
       // 1. Upload image to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${effectiveUserId}/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('charts')
@@ -65,7 +65,7 @@ export function useCharts() {
       const { data, error } = await supabase
         .from('chart_library')
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           image_url: publicUrl,
           ...metadata
         })
