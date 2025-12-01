@@ -1,6 +1,8 @@
 // src/hooks/useAuth.ts
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import type { Mentorship } from "@/hooks/mentor/useMentorships";
 
 export type AuthUser = {
   id: string;
@@ -107,20 +109,49 @@ export function useAuth() {
   // Impersonation State
   const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
   const [impersonatedUserEmail, setImpersonatedUserEmail] = useState<string | null>(null);
+  const [impersonatedMentorship, setImpersonatedMentorship] = useState<Mentorship | null>(null);
 
   // Computed property for effective user ID
   const effectiveUserId = impersonatedUserId || user?.id;
   const isImpersonating = !!impersonatedUserId;
 
   // Impersonation Actions
-  const startImpersonation = (userId: string, email: string) => {
-    setImpersonatedUserId(userId);
-    setImpersonatedUserEmail(email);
+  const startImpersonation = async (menteeId: string, menteeEmail: string) => {
+    try {
+      console.log('🔍 Starting impersonation for:', menteeId, menteeEmail);
+      console.log('🔍 Current user:', user?.id);
+      
+      // Fetch the mentorship to get permissions
+      const { data: mentorship, error } = await supabase
+        .from('mentorships')
+        .select('*')
+        .eq('mentor_id', user?.id)
+        .eq('mentee_id', menteeId)
+        .eq('status', 'active')
+        .single();
+
+      console.log('🔍 Fetched mentorship:', mentorship);
+      console.log('🔍 Mentorship error:', error);
+      console.log('🔍 Permissions:', mentorship?.permissions);
+
+      if (error) throw error;
+
+      setImpersonatedMentorship(mentorship);
+      setImpersonatedUserId(menteeId);
+      setImpersonatedUserEmail(menteeEmail);
+    } catch (error) {
+      console.error('❌ Failed to fetch mentorship:', error);
+      // Still set basic impersonation even if mentorship fetch fails (legacy support)
+      setImpersonatedUserId(menteeId);
+      setImpersonatedUserEmail(menteeEmail);
+    }
   };
 
   const stopImpersonation = () => {
+    console.log('🛑 Stopping impersonation');
     setImpersonatedUserId(null);
     setImpersonatedUserEmail(null);
+    setImpersonatedMentorship(null);
   };
 
   return { 
@@ -133,6 +164,7 @@ export function useAuth() {
     // Impersonation exports
     impersonatedUserId,
     impersonatedUserEmail,
+    impersonatedMentorship,
     effectiveUserId,
     isImpersonating,
     startImpersonation,

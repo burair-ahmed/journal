@@ -17,6 +17,8 @@ export interface Mentorship {
     show_account_balance: boolean;
     can_assign: boolean;
     can_comment: boolean;
+    allowed_tabs?: string[];  // Which tabs/views mentor can access
+    allowed_accounts?: number[];  // Which account IDs mentor can view
   };
   invited_by: string;
   invite_message?: string;
@@ -134,6 +136,8 @@ export function useMentorships() {
             show_account_balance: input.permissions?.show_account_balance ?? false,
             can_assign: input.permissions?.can_assign ?? true,
             can_comment: input.permissions?.can_comment ?? true,
+            allowed_tabs: input.permissions?.allowed_tabs ?? [],
+            allowed_accounts: input.permissions?.allowed_accounts ?? [],
           },
           status: 'pending'
         })

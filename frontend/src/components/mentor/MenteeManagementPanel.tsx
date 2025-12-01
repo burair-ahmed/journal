@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { useMentorships, InviteMentorInput } from "@/hooks/mentor/useMentorships";
 import { UserPlus, Shield, Eye, EyeOff, Ban, CheckCircle2, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AVAILABLE_TABS } from "@/lib/mentor/constants";
+import { useAccounts } from "@/hooks/useAccounts";
+import { useAuthContext } from "@/contexts/AuthContext";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -29,6 +33,8 @@ dayjs.extend(relativeTime);
 
 export const MenteeManagementPanel: React.FC = () => {
   const { myMentors, isLoading, inviteMentor, revokeAccess } = useMentorships();
+  const { user } = useAuthContext();
+  const { data: accounts } = useAccounts(user?.id);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<InviteMentorInput>({
     mentor_email: "",
@@ -36,6 +42,8 @@ export const MenteeManagementPanel: React.FC = () => {
     permissions: {
       show_pnl: false,
       show_account_balance: false,
+      allowed_tabs: AVAILABLE_TABS.map(tab => tab.id),  // Default: all tabs
+      allowed_accounts: [],  // Will populate on dialog open
     },
   });
 
@@ -48,9 +56,54 @@ export const MenteeManagementPanel: React.FC = () => {
       setFormData({
         mentor_email: "",
         message: "",
-        permissions: { show_pnl: false, show_account_balance: false },
+        permissions: { 
+          show_pnl: false, 
+          show_account_balance: false,
+          allowed_tabs: AVAILABLE_TABS.map(tab => tab.id),
+          allowed_accounts: accounts?.map(a => a.id) || [],
+        },
       });
     }
+  };
+
+  // Handle tab toggle
+  const handleTabToggle = (tabId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions!,
+        allowed_tabs: checked 
+          ? [...(prev.permissions?.allowed_tabs || []), tabId]
+          : (prev.permissions?.allowed_tabs || []).filter(t => t !== tabId)
+      }
+    }));
+  };
+
+  // Handle account toggle
+  const handleAccountToggle = (accountId: number, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions!,
+        allowed_accounts: checked
+          ? [...(prev.permissions?.allowed_accounts || []), accountId]
+          : (prev.permissions?.allowed_accounts || []).filter(a => a !== accountId)
+      }
+    }));
+  };
+
+  // Populate default accounts when dialog opens
+  const handleDialogOpenChange = (open: boolean) => {
+    if (open && accounts) {
+      setFormData(prev => ({
+        ...prev,
+        permissions: {
+          ...prev.permissions!,
+          allowed_accounts: accounts.map(a => a.id)
+        }
+      }));
+    }
+    setIsDialogOpen(open);
   };
 
   const getStatusBadge = (status: string) => {
@@ -89,7 +142,7 @@ export const MenteeManagementPanel: React.FC = () => {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-brand-gradient text-white">
               <UserPlus className="h-4 w-4 mr-2" />
@@ -125,37 +178,91 @@ export const MenteeManagementPanel: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <label className="text-sm font-medium">Show P&L Values</label>
-                    <p className="text-xs text-muted-foreground">Allow mentor to see actual dollar amounts</p>
+              <div className="space-y-4 pt-2 border-t">
+                <div className="text-sm font-semibold">Access Permissions</div>
+
+                {/* Tab Selection */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Accessible Tabs</label>
+                    <p className="text-xs text-muted-foreground">Select which sections your mentor can view</p>
                   </div>
-                  <Switch
-                    checked={formData.permissions?.show_pnl}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        permissions: { ...prev.permissions, show_pnl: checked },
-                      }))
-                    }
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    {AVAILABLE_TABS.map(tab => (
+                      <div key={tab.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`tab-${tab.id}`}
+                          checked={formData.permissions?.allowed_tabs?.includes(tab.id)}
+                          onCheckedChange={(checked) => handleTabToggle(tab.id, !!checked)}
+                        />
+                        <label htmlFor={`tab-${tab.id}`} className="text-sm cursor-pointer">
+                          {tab.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <label className="text-sm font-medium">Show Account Balance</label>
-                    <p className="text-xs text-muted-foreground">Allow mentor to see total account equity</p>
+                {/* Account Selection */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Accessible Accounts</label>
+                    <p className="text-xs text-muted-foreground">Select which trading accounts your mentor can see</p>
                   </div>
-                  <Switch
-                    checked={formData.permissions?.show_account_balance}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        permissions: { ...prev.permissions, show_account_balance: checked },
-                      }))
-                    }
-                  />
+                  {accounts && accounts.length > 0 ? (
+                    <div className="space-y-2">
+                      {accounts.map(account => (
+                        <div key={account.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`account-${account.id}`}
+                            checked={formData.permissions?.allowed_accounts?.includes(account.id)}
+                            onCheckedChange={(checked) => handleAccountToggle(account.id, !!checked)}
+                          />
+                          <label htmlFor={`account-${account.id}`} className="text-sm cursor-pointer">
+                            {account.alias || `MT5 ${account.mt5_login} (${account.mt5_server})`}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No accounts found. Add an account first.</p>
+                  )}
+                </div>
+
+                {/* Data Visibility */}
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">Data Visibility</div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label className="text-sm font-medium">Show P&L Values</label>
+                      <p className="text-xs text-muted-foreground">Allow mentor to see actual dollar amounts</p>
+                    </div>
+                    <Switch
+                      checked={formData.permissions?.show_pnl}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          permissions: { ...prev.permissions, show_pnl: checked },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label className="text-sm font-medium">Show Account Balance</label>
+                      <p className="text-xs text-muted-foreground">Allow mentor to see total account equity</p>
+                    </div>
+                    <Switch
+                      checked={formData.permissions?.show_account_balance}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          permissions: { ...prev.permissions, show_account_balance: checked },
+                        }))
+                      }
+                    />
+                  </div>
                 </div>
               </div>
 

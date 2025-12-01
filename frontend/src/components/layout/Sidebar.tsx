@@ -25,7 +25,7 @@ import {
 
 export const Sidebar = () => {
   const { activeView, setActiveView } = useUI();
-  const { user, setUser, loading, logout } = useAuthContext();
+  const { user, setUser, loading, logout, isImpersonating, impersonatedMentorship } = useAuthContext();
   const [formData, setFormData] = useState({
     name: user?.name ?? "",
     username: user?.username ?? "",
@@ -43,21 +43,48 @@ export const Sidebar = () => {
       });
       setPreview(user?.profile_picture || null);
     }, [user]);
-  const menuItems = [
-    { icon: BarChart3, label: "Dashboard", view: "dashboard" },
-    { icon: BookOpen, label: "Daily Journal", view: "dailyJournal" },
-    { icon: Users, label: "Trades", view: "trades" },
-    { icon: Notebook, label: "Notebook", view: "notebook" },
-    { icon: Book, label: "Playbook", view: "playbook" },
-    { icon: FileText, label: "Reports", view: "reports" },
-    { icon: Zap, label: "Insights", view: "insights" },
-    { icon: User, label: "Backtesting", view: "backtesting", badge: "NEW" },
-    { icon: FileText, label: "Trade Replay", view: "tradeReplay" },
-    { icon: GraduationCap, label: "Challenges", view: "challenges", badge: "NEW" },
-    { icon: User, label: "Mentor Mode", view: "mentorMode" },
-    { icon: GraduationCap, label: "University", view: "university" },
-    { icon: Globe, label: "Resource Center", view: "resourceCenter" },
+
+  const allMenuItems = [
+    { icon: BarChart3, label: "Dashboard", view: "dashboard", id: "dashboard" },
+    { icon: BookOpen, label: "Daily Journal", view: "dailyJournal", id: "dailyJournal" },
+    { icon: Users, label: "Trades", view: "trades", id: "trades" },
+    { icon: Notebook, label: "Notebook", view: "notebook", id: "notebook" },
+    { icon: Book, label: "Playbook", view: "playbook", id: "playbook" },
+    { icon: FileText, label: "Reports", view: "reports", id: "reports" },
+    { icon: Zap, label: "Insights", view: "insights", id: "insights" },
+    { icon: User, label: "Backtesting", view: "backtesting", id: "backtesting", badge: "NEW" },
+    { icon: FileText, label: "Trade Replay", view: "tradeReplay", id: "tradeReplay" },
+    { icon: GraduationCap, label: "Challenges", view: "challenges", id: "challenges", badge: "NEW" },
+    { icon: User, label: "Mentor Mode", view: "mentorMode", id: "mentorMode" },
+    { icon: GraduationCap, label: "University", view: "university", id: "university" },
+    { icon: Globe, label: "Resource Center", view: "resourceCenter", id: "resourceCenter" },
   ];
+
+  // Filter menu items based on mentor permissions
+  const menuItems = allMenuItems.filter(item => {
+    // If not impersonating, show all items
+    if (!isImpersonating) return true;
+    
+    console.log('🎯 Sidebar filtering - isImpersonating:', isImpersonating);
+    console.log('🎯 Mentorship:', impersonatedMentorship);
+    console.log('🎯 Checking item:', item.id);
+    
+    // During impersonation, check permissions
+    const allowedTabs = impersonatedMentorship?.permissions?.allowed_tabs;
+    
+    console.log('🎯 Allowed tabs:', allowedTabs);
+    
+    // If no allowed_tabs defined (legacy mentorship), show all
+    if (!allowedTabs || allowedTabs.length === 0) {
+      console.log('🎯 No restrictions - showing all');
+      return true;
+    }
+    
+    // Check if this item's ID is in allowed tabs
+    const isAllowed = allowedTabs.includes(item.id);
+    console.log('🎯 Item', item.id, 'allowed:', isAllowed);
+    return isAllowed;
+  });
 
   return (
     <aside className="fixed top-0 left-0 w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shadow-xl z-40">

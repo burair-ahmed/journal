@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import { useAuth, AuthUser } from "@/hooks/useAuth";
+import type { Mentorship } from "@/hooks/mentor/useMentorships";
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -11,9 +12,10 @@ type AuthContextType = {
   // Impersonation
   impersonatedUserId: string | null;
   impersonatedUserEmail: string | null;
+  impersonatedMentorship: Mentorship | null;
   effectiveUserId: string | undefined;
   isImpersonating: boolean;
-  startImpersonation: (userId: string, email: string) => void;
+  startImpersonation: (userId: string, email: string) => Promise<void>;
   stopImpersonation: () => void;
 };
 

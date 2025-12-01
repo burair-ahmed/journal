@@ -22,10 +22,38 @@ type AccountContextType = {
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { effectiveUserId } = useAuthContext();
-  const { data: accounts, isLoading } = useAccounts(effectiveUserId);
+  const { effectiveUserId, isImpersonating, impersonatedMentorship } = useAuthContext();
+  const { data: allAccounts, isLoading } = useAccounts(effectiveUserId);
 
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+
+  // Filter accounts based on mentor permissions
+  const accounts = React.useMemo(() => {
+    if (!allAccounts) return undefined;
+    
+    console.log('💰 Account filtering - isImpersonating:', isImpersonating);
+    console.log('💰 All accounts:', allAccounts);
+    console.log('💰 Mentorship:', impersonatedMentorship);
+    
+    // If not impersonating, return all accounts
+    if (!isImpersonating) return allAccounts;
+    
+    // During impersonation, filter by allowed_accounts
+    const allowedAccounts = impersonatedMentorship?.permissions?.allowed_accounts;
+    
+    console.log('💰 Allowed accounts:', allowedAccounts);
+    
+    // If no allowed_accounts defined (legacy mentorship), show all
+    if (!allowedAccounts || allowedAccounts.length === 0) {
+      console.log('💰 No restrictions - showing all accounts');
+      return allAccounts;
+    }
+    
+    // Filter to only allowed accounts
+    const filtered = allAccounts.filter(account => allowedAccounts.includes(account.id));
+    console.log('💰 Filtered accounts:', filtered);
+    return filtered;
+  }, [allAccounts, isImpersonating, impersonatedMentorship]);
 
   // Reset account selection when effectiveUserId changes (e.g., impersonation starts/stops)
   useEffect(() => {
