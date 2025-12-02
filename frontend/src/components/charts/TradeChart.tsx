@@ -47,18 +47,18 @@ export const TradeChart: React.FC<TradeChartProps> = ({
     extendedEndTime     // 2 days after trade
   );
 
-  // Create entry/exit markers
+  // Create entry/exit markers at exact price points
   const markers = (ohlcData && Array.isArray(ohlcData) && ohlcData.length > 0) ? [
     {
       time: dayjs(openTime).unix(),
-      position: tradeType === 'BUY' ? 'belowBar' as const : 'aboveBar' as const,
+      position: 'inBar' as const, // Position on bar at exact price
       color: '#3b82f6',
       shape: 'arrowUp' as const,
       text: `Entry: ${entryPrice.toFixed(5)}`,
     },
     {
       time: dayjs(closeTime).unix(),
-      position: exitPrice > entryPrice ? 'aboveBar' as const : 'belowBar' as const,
+      position: 'inBar' as const, // Position on bar at exact price
       color: exitPrice > entryPrice ? '#10b981' : '#ef4444',
       shape: 'arrowDown' as const,
       text: `Exit: ${exitPrice.toFixed(5)}`,

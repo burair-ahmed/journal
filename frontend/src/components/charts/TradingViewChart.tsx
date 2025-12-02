@@ -79,11 +79,11 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
     candlestickSeries.setData(chartData);
     
-    // Add markers if provided
+    // Add markers at exact price points (using 'inBar' position)
     if (markers && markers.length > 0) {
       const chartMarkers = markers.map(marker => ({
         time: marker.time as UTCTimestamp,
-        position: marker.position,
+        position: 'inBar' as const, // Position marker on the bar itself at exact price
         color: marker.color,
         shape: marker.shape,
         text: marker.text,
