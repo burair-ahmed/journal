@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
 from .mt5_fetch import connect_mt5, shutdown_mt5, fetch_trades, save_trades_to_supabase
+from .ohlc_fetch import sync_ohlc_for_account, DEFAULT_TIMEFRAMES
 from .db import supabase
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -102,3 +103,53 @@ def sync_trades(account_id: int, days: int = 90):
         "new_count": result.get("new_count", 0),
         "updated_count": result.get("updated_count", 0),
     }
+
+
+# -------------------------
+# OHLC Data Sync Endpoint
+# -------------------------
+@app.post("/sync-ohlc/{account_id}")
+def sync_ohlc(account_id: int, timeframes: List[str] = None, days: int = 90):
+    """
+    Sync OHLC (candlestick) data from MT5 to Supabase.
+    
+    Process:
+    - Fetches OHLC data for all traded symbols in the account
+    - Uses server-based storage (shares data across accounts on same server)
+    - Smart sync: checks for existing data before fetching
+    
+    Args:
+        account_id: Account ID to sync
+        timeframes: List of timeframes to sync (e.g., ['5m', '1h', '1d']). 
+                   Defaults to ['5m', '1h', '1d']
+        days: Number of days of historical data to fetch (default: 90)
+    
+    Returns:
+        JSON with sync results
+    """
+    # Use default timeframes if none provided
+    if timeframes is None:
+        timeframes = DEFAULT_TIMEFRAMES
+    
+    # Validate timeframes
+    valid_timeframes = ['1m', '3m', '5m', '30m', '1h', '4h', '1d']
+    invalid_tf = [tf for tf in timeframes if tf not in valid_timeframes]
+    if invalid_tf:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid timeframes: {invalid_tf}. Valid options: {valid_timeframes}"
+        )
+    
+    # Execute sync
+    result = sync_ohlc_for_account(
+        account_id=account_id,
+        timeframes=timeframes,
+        days_back=days
+    )
+    
+    # Check for errors
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    
+    return result
+

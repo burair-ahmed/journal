@@ -9,16 +9,16 @@ export const ImpersonationBanner = () => {
   if (!isImpersonating) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-indigo-600 text-white py-3 px-4 z-50 shadow-lg flex items-center justify-between animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-0 left-0 right-0 bg-indigo-600 text-white py-2 px-4 z-50 shadow-lg flex items-center justify-between animate-in slide-in-from-bottom duration-300">
       <div className="flex items-center gap-3">
-        <div className="bg-white/20 p-2 rounded-full">
-          <Eye className="h-5 w-5" />
+        <div className="bg-white/20 p-1 rounded-full">
+          <Eye className="h-3 w-3" />
         </div>
         <div>
-          <p className="font-medium text-sm md:text-base">
+          <p className="font-medium text-[12px] md:text-base">
             Viewing as <span className="font-bold">{impersonatedUserEmail}</span>
           </p>
-          <p className="text-xs text-indigo-200 hidden md:block">
+          <p className="text-[12px] text-indigo-200 hidden md:block">
             You are in read-only mode. Actions like creating, editing, or deleting are disabled.
           </p>
         </div>

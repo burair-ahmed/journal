@@ -11,7 +11,7 @@ import {
   FileSpreadsheet,
   Image,
   Calendar as CalendarIcon,
-  X,
+  X,TrendingUp
 } from "lucide-react";
 import {
   Popover,
@@ -38,6 +38,7 @@ import { useRef, useState, useMemo } from "react";
 import { ExportReport } from "@/components/dashboard/ExportReport";
 import { Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { TradeChart } from '@/components/charts/TradeChart';
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -711,7 +712,24 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                       {!isImpersonating && (
                         <Edit3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                       )}
-                      <BarChart3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <TrendingUp className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[900px] h-[700px] p-0">
+        <TradeChart
+          symbol={trade.symbol}
+          accountId={trade.account_id}
+          openTime={trade.open_time}
+          closeTime={trade.close_time}
+          entryPrice={trade.open_price}
+          exitPrice={trade.close_price}
+          tradeType={trade.type}
+        />
+      </PopoverContent>
+    </Popover>
                       <LineChart className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
                       
                       <Popover>
