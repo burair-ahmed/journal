@@ -28,6 +28,7 @@ import { MenteeDetailView } from "@/components/mentor/MenteeDetailView";
 import { ImpersonationBanner } from "@/components/mentor/ImpersonationBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TradeReplay } from "@/views/TradeReplay";
 const DashboardContent = () => {
   const { selectedAccountId, accounts, isLoadingAccounts } = useAccountContext();
   const { activeView, setActiveView } = useUI();
@@ -172,6 +173,9 @@ const DashboardContent = () => {
     );
   }
         return <ExportReport/>
+
+        case "tradeReplay":
+        return <TradeReplay />;
 
         case "mentorMode":
         return <MentorModeDashboard />;

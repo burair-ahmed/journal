@@ -21,7 +21,7 @@ interface TradeChartProps {
   tradeType: 'BUY' | 'SELL';
 }
 
-const TIMEFRAMES: Timeframe[] = ['1m', '3m', '5m', '30m', '1h', '4h', '1d'];
+const TIMEFRAMES: Timeframe[] = ['5m', '1h', '1d'];
 
 export const TradeChart: React.FC<TradeChartProps> = ({
   symbol,

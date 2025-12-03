@@ -11,7 +11,9 @@ import {
   FileSpreadsheet,
   Image,
   Calendar as CalendarIcon,
-  X,TrendingUp
+  X,
+  TrendingUp,
+  PlayCircle
 } from "lucide-react";
 import {
   Popover,
@@ -47,9 +49,12 @@ interface TradesTableProps {
   accountId?: number;
 }
 
+import { useNavigate } from "react-router-dom";
+
 export const TradesTable = ({ accountId }: TradesTableProps) => {
   const { trades, isLoading } = useFilteredTrades(accountId);
   const { isImpersonating } = useAuthContext();
+  const navigate = useNavigate();
 
   // --- Full History Export Handlers ---
   const reportRef = useRef<HTMLDivElement>(null);
@@ -709,14 +714,14 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
                   {/* Actions */}
                   <td className="px-5 py-3 text-right align-top">
                     <div className="flex items-center justify-end gap-3">
-                      {!isImpersonating && (
+                      {/* {!isImpersonating && (
                         <Edit3 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
-                      )}
+                      )} */}
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <TrendingUp className="h-4 w-4" />
-        </Button>
+        {/* <Button variant="ghost" size="icon"> */}
+          <TrendingUp className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+        {/* </Button> */}
       </PopoverTrigger>
       <PopoverContent className="w-[900px] h-[700px] p-0">
         <TradeChart
@@ -730,7 +735,15 @@ export const TradesTable = ({ accountId }: TradesTableProps) => {
         />
       </PopoverContent>
     </Popover>
-                      <LineChart className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      {/* <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/trade-replay?tradeId=${trade.id}`)}
+                        title="Replay Trade"
+                      > */}
+                        <PlayCircle onClick={() => navigate(`/trade-replay?tradeId=${trade.id}`)} className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" />
+                      {/* </Button> */}
+                      {/* <LineChart className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors cursor-pointer" /> */}
                       
                       <Popover>
                         <PopoverTrigger asChild>

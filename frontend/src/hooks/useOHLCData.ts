@@ -156,7 +156,7 @@ export const useOHLCData = (
     },
     enabled: !!accountId && !!symbol && !!timeframe && !!startTime && !!endTime,
     staleTime: 1000 * 60 * 60, // 1 hour - OHLC data is historical, can cache aggressively
-    cacheTime: 1000 * 60 * 60 * 24, // 24 hours
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours (renamed from cacheTime in React Query v5)
     retry: 2,
   });
 };
