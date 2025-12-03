@@ -27,6 +27,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
           <Route path="/accounts/:id" element={<AccountPage />} />
           <Route path="/mentorship" element={<Index />} />
+          <Route path="/trade-replay" element={<Index />} />
           <Route path="/mentor/access/:token" element={<MentorSharedView />} />
         </Routes>
 

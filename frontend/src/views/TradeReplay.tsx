@@ -7,10 +7,16 @@ import { ReplayControls } from '@/components/replay/ReplayControls';
 import { ReplayTimeline } from '@/components/replay/ReplayTimeline';
 import { QuickTradeSelector } from '@/components/replay/QuickTradeSelector';
 import { useAccountContext } from '@/contexts/AccountContext';
-import { Loader2, PlayCircle } from 'lucide-react';
+import { Loader2, PlayCircle, ArrowLeftRight } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { useFilteredTrades } from '@/hooks/useTrades';
+import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export const TradeReplay = () => {
   const { selectedAccountId } = useAccountContext();
@@ -159,38 +165,56 @@ export const TradeReplay = () => {
       {/* Header */}
       <Card className="p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold bg-brand-gradient bg-clip-text text-transparent">
-              Trade Replay
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {selectedTrade.symbol} • {selectedTrade.type === 0 ? 'BUY' : 'SELL'} •{' '}
-              {dayjs(selectedTrade.open_time).format('MMM DD, YYYY HH:mm')}
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold bg-brand-gradient bg-clip-text text-transparent">
+                Trade Replay
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {selectedTrade.symbol} • {selectedTrade.type === 0 ? 'BUY' : 'SELL'} •{' '}
+                {dayjs(selectedTrade.open_time).format('MMM DD, YYYY HH:mm')}
+              </p>
+            </div>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ArrowLeftRight className="h-4 w-4" />
+                  Switch Trade
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <QuickTradeSelector
+                  accountId={selectedAccountId}
+                  onSelectTrade={(trade) => {
+                    if (trade) selectTrade(trade);
+                  }}
+                  selectedTrade={selectedTrade}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           
           {/* Stats */}
           <div className="flex gap-6">
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Current P&L</div>
-              <div
-                className={`text-xl font-bold ${
-                  currentPnL >= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              >
-                {currentPnL >= 0 ? '+' : ''}${currentPnL.toFixed(2)}
+              <div className="text-xs text-muted-foreground">Entry Price</div>
+              <div className="text-xl font-bold font-mono">
+                {selectedTrade.open_price.toFixed(5)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Progress</div>
-              <div className="text-xl font-bold">{progress.toFixed(0)}%</div>
+              <div className="text-xs text-muted-foreground">Exit Price</div>
+              <div className="text-xl font-bold font-mono">
+                {selectedTrade.close_price.toFixed(5)}
+              </div>
             </div>
           </div>
         </div>
       </Card>
 
       {/* Main Content - Chart Area */}
-      <Card className="flex-1 p-0 overflow-hidden bg-black">
+      <Card className="flex-1 p-0">
         <ReplayChart
           allCandles={candles}
           currentIndex={currentIndex}
@@ -202,7 +226,7 @@ export const TradeReplay = () => {
           showEntry={hasReachedEntry}
           showExit={hasReachedExit}
           currentPnL={currentPnL}
-          height={600}
+          height={400}
         />
       </Card>
 

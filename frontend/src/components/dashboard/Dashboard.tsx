@@ -40,6 +40,8 @@ const DashboardContent = () => {
   useEffect(() => {
     if (location.pathname === '/mentorship') {
       setActiveView('mentorMode');
+    } else if (location.pathname === '/trade-replay') {
+      setActiveView('tradeReplay');
     }
   }, [location.pathname, setActiveView]);
 
