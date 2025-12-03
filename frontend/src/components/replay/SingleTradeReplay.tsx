@@ -63,10 +63,10 @@ export const SingleTradeReplay = ({
   // Sync with Master Control
   useEffect(() => {
     if (masterControl && selectedTrade) {
-      masterControl.onRegister({ play, pause });
+      masterControl.onRegister({ play, pause, restart, setSpeed });
       return () => masterControl.onUnregister();
     }
-  }, [masterControl, selectedTrade, play, pause]);
+  }, [masterControl, selectedTrade, play, pause, restart, setSpeed]);
 
   const { trades } = useFilteredTrades(selectedAccountId);
 
@@ -114,17 +114,10 @@ export const SingleTradeReplay = ({
 
   // Update candles when data loads
   useEffect(() => {
-    console.log(`[SingleTradeReplay] OHLC Data received:`, ohlcData?.length || 0, 'candles');
     if (ohlcData && Array.isArray(ohlcData) && ohlcData.length > 0) {
-      console.log(`[SingleTradeReplay] Calling setCandles with ${ohlcData.length} candles`);
       setCandles(ohlcData);
     }
   }, [ohlcData, setCandles]);
-
-  // Debug: Log candles state
-  useEffect(() => {
-    console.log(`[SingleTradeReplay] Candles state updated:`, candles.length, 'candles');
-  }, [candles]);
 
   // Empty state - no trade selected
   if (!selectedTrade) {

@@ -21,6 +21,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type LayoutType = '1x1' | '1x2' | '2x2';
 
@@ -41,6 +48,7 @@ export const TradeReplay = () => {
   
   // Master Control Logic
   const [isMasterPlaying, setIsMasterPlaying] = useState(false);
+  const [masterSpeed, setMasterSpeed] = useState(1);
   const [childControls, setChildControls] = useState<any[]>([]);
 
   const registerChild = (controls: any) => {
@@ -53,6 +61,7 @@ export const TradeReplay = () => {
 
   const masterControl = isSyncEnabled ? {
     isPlaying: isMasterPlaying,
+    speed: masterSpeed,
     onRegister: registerChild,
     onUnregister: () => {}, // Simplified for now, ideally pass ID
   } : undefined;
@@ -63,6 +72,20 @@ export const TradeReplay = () => {
     childControls.forEach(child => {
       if (newState) child.play();
       else child.pause();
+    });
+  };
+
+  const handleMasterRestart = () => {
+    childControls.forEach(child => {
+      if (child.restart) child.restart();
+    });
+    setIsMasterPlaying(false);
+  };
+
+  const handleMasterSpeedChange = (newSpeed: number) => {
+    setMasterSpeed(newSpeed);
+    childControls.forEach(child => {
+      if (child.setSpeed) child.setSpeed(newSpeed);
     });
   };
 
@@ -161,7 +184,7 @@ export const TradeReplay = () => {
       </div>
 
       {/* Grid Container */}
-      <div className={`grid ${getGridClass()} gap-4 flex-1 min-h-0 transition-all duration-300`}>
+      <div className={`grid ${getGridClass()} gap-4 flex-1 min-h-0 transition-all duration-300 ${isSyncEnabled ? 'pb-24' : ''}`}>
         {slots.map((slot) => (
           <div key={slot.id} className="min-h-0 min-w-0 h-full">
             <SingleTradeReplay
@@ -182,34 +205,56 @@ export const TradeReplay = () => {
       {/* Master Control Bar (Visible only when Sync is ON) */}
       {isSyncEnabled && (
         <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl p-4 shadow-2xl border-primary/20 bg-background/95 backdrop-blur animate-in slide-in-from-bottom-10">
-          <div className="flex items-center gap-4">
-            <Button 
-              size="icon" 
-              variant="outline"
-              onClick={() => {
-                // TODO: Implement master restart
-              }}
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-            
-            <Button 
-              className="flex-1 bg-brand-gradient text-white"
-              onClick={toggleMasterPlay}
-            >
-              {isMasterPlaying ? (
-                <>
-                  <Pause className="h-4 w-4 mr-2" /> Pause All
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" /> Play All
-                </>
-              )}
-            </Button>
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Restart & Play/Pause */}
+            <div className="flex items-center gap-2">
+              <Button 
+                size="icon" 
+                variant="outline"
+                onClick={handleMasterRestart}
+                title="Restart All"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              
+              <Button 
+                size="icon"
+                variant={isMasterPlaying ? "secondary" : "default"}
+                className={isMasterPlaying ? "" : "bg-brand-gradient text-white hover:opacity-90"}
+                onClick={toggleMasterPlay}
+                title={isMasterPlaying ? "Pause All" : "Play All"}
+              >
+                {isMasterPlaying ? (
+                  <Pause className="h-4 w-4" />
+                ) : (
+                  <Play className="h-4 w-4 fill-current" />
+                )}
+              </Button>
+            </div>
 
+            {/* Center: Label */}
             <div className="text-sm text-muted-foreground font-mono">
-              Master Control Active
+              Master Control
+            </div>
+
+            {/* Right: Speed Control */}
+            <div className="flex items-center gap-2">
+              <Minimize className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={masterSpeed.toString()}
+                onValueChange={(val) => handleMasterSpeedChange(Number(val))}
+              >
+                <SelectTrigger className="w-[80px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0.5, 1, 2, 5, 10, 20].map((s) => (
+                    <SelectItem key={s} value={s.toString()}>
+                      {s}x
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </Card>

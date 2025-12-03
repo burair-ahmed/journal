@@ -43,9 +43,7 @@ export const ReplayChart: React.FC<ReplayChartProps> = ({
 }) => {
   // Get only the candles up to current index (progressive reveal)
   const visibleCandles = useMemo(() => {
-    const visible = allCandles.slice(0, currentIndex + 1);
-    console.log(`[ReplayChart] Total candles: ${allCandles.length}, Current index: ${currentIndex}, Visible: ${visible.length}`);
-    return visible;
+    return allCandles.slice(0, currentIndex + 1);
   }, [allCandles, currentIndex]);
 
   // Create markers that appear only when we've reached their timestamp

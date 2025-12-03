@@ -142,25 +142,10 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     }
   }, [markers]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log(`[Chart Debug] Mounted. Data: ${data.length}, Height: ${height}, AutoSize: ${autoSize}`);
-    if (chartContainerRef.current) {
-      const { width, height } = chartContainerRef.current.getBoundingClientRect();
-      console.log(`[Chart Debug] Initial Dimensions: ${width}x${height}`);
-    }
-  }, []);
-
-  // Debug: Log when data updates
-  useEffect(() => {
-    console.log(`[Chart Debug] Data updated:`, data.length, 'candles');
-  }, [data]);
-
   return (
     <div 
       ref={chartContainerRef} 
-      className={`w-full ${autoSize ? 'h-full' : ''} relative`} 
-      style={{ border: '1px solid red' }} // Temporary debug border
+      className={`w-full ${autoSize ? 'h-full' : ''} relative`}
     >
       {(!data || data.length === 0) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black text-gray-400 z-10">
