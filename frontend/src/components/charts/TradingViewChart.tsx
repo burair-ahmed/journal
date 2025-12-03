@@ -20,12 +20,14 @@ interface TradingViewChartProps {
   data: OHLCCandle[];
   markers?: ChartMarker[];
   height?: number;
+  autoSize?: boolean;
 }
 
 export const TradingViewChart: React.FC<TradingViewChartProps> = ({ 
   data,
   markers = [],
-  height = 400
+  height = 400,
+  autoSize = false
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
@@ -80,21 +82,32 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     chartRef.current = chart;
     seriesRef.current = candlestickSeries;
 
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener('resize', handleResize);
+    // Handle resize with ResizeObserver
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!chart || !entries[0]) return;
+      
+      const { width, height: rectHeight } = entries[0].target.getBoundingClientRect();
+      
+      // Fallback to prop height if container is 0 (e.g. hidden or collapsed)
+      const effectiveHeight = (autoSize && rectHeight > 0) ? rectHeight : height;
+      
+      chart.applyOptions({ 
+        width,
+        height: effectiveHeight
+      });
+    });
+
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [height]); // Only re-create if height changes
+  }, [height, autoSize]); // Re-run if height or autoSize changes
 
   // 2. Update Data
   useEffect(() => {
@@ -109,11 +122,6 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     }));
 
     seriesRef.current.setData(chartData);
-    
-    // Only fit content on initial load (optional, maybe we don't want this for replay)
-    // if (data.length > 0 && data.length < 100) {
-    //   chartRef.current?.timeScale().fitContent();
-    // }
   }, [data]);
 
   // 3. Update Markers
@@ -137,13 +145,13 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
   if (!data || data.length === 0) {
     return (
       <div 
-        className="flex items-center justify-center bg-black text-gray-400" 
-        style={{ height: `${height}px` }}
+        className={`flex items-center justify-center bg-black text-gray-400 ${autoSize ? 'h-full' : ''}`}
+        style={!autoSize ? { height: `${height}px` } : undefined}
       >
         <p>No chart data available</p>
       </div>
     );
   }
 
-  return <div ref={chartContainerRef} className="w-full" />;
+  return <div ref={chartContainerRef} className={`w-full ${autoSize ? 'h-full' : ''}`} />;
 };

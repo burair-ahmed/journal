@@ -15,6 +15,7 @@ interface ReplayChartProps {
   showExit: boolean;
   currentPnL: number;
   height?: number;
+  autoSize?: boolean;
 }
 
 interface ChartMarker {
@@ -35,8 +36,10 @@ export const ReplayChart: React.FC<ReplayChartProps> = ({
   tradeType,
   showEntry,
   showExit,
+
   currentPnL,
   height = 500,
+  autoSize = false,
 }) => {
   // Get only the candles up to current index (progressive reveal)
   const visibleCandles = useMemo(() => {
@@ -77,13 +80,14 @@ export const ReplayChart: React.FC<ReplayChartProps> = ({
   const currentCandle = allCandles[currentIndex];
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full min-h-[300px]">
       {/* Chart */}
       <div className="h-full">
         <TradingViewChart
           data={visibleCandles}
           markers={markers}
           height={height}
+          autoSize={autoSize}
         />
       </div>
 
