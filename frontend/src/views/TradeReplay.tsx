@@ -136,13 +136,13 @@ export const TradeReplay = () => {
     switch (layout) {
       case '1x1': return 'grid-cols-1 grid-rows-1';
       case '1x2': return 'grid-cols-2 grid-rows-1';
-      case '2x2': return 'grid-cols-2 grid-rows-2';
+      case '2x2': return 'grid-cols-2 grid-rows-2 min-h-[600px]';
       default: return 'grid-cols-1';
     }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background p-4 gap-4 relative">
+    <div className="flex flex-col bg-background p-4 gap-4 relative">
       {/* Top Bar */}
       <div className="flex items-center justify-between shrink-0">
         <h1 className="text-2xl font-bold bg-brand-gradient bg-clip-text text-transparent">

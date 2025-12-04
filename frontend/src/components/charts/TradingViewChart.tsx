@@ -40,19 +40,19 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: '#000000' },
-        textColor: '#d1d5db',
+        background: { type: ColorType.Solid, color: '#fff4e7' },
+        textColor: '#303439',
       },
       width: chartContainerRef.current.clientWidth,
       height: height,
       grid: {
-        vertLines: { color: '#1f2937' },
-        horzLines: { color: '#1f2937' },
+        vertLines: { color: '#1f2937a6' },
+        horzLines: { color: '#1f2937a6' },
       },
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: '#374151',
+        borderColor: '#1f2937a6',
         // Prevent auto-scroll to latest candle
         rightOffset: 12,
         barSpacing: 6,
@@ -67,16 +67,16 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
     // Add candlestick series
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#10b981',
-      downColor: '#ef4444',
+      upColor: '#f155f1',
+      downColor: '#303439',
       borderVisible: true,
-      borderColor: '#000000',
-      borderUpColor: '#10b981',
-      borderDownColor: '#ef4444',
+      // borderColor: '#000000',
+      borderUpColor: '#f155f1',
+      borderDownColor: '#303439',
       wickVisible: true,
-      wickColor: '#999999',
-      wickUpColor: '#10b981',
-      wickDownColor: '#ef4444',
+      // wickColor: '#999999',
+      wickUpColor: '#f155f1',
+      wickDownColor: '#303439',
     } as any);
 
     chartRef.current = chart;

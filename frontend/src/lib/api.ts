@@ -20,3 +20,8 @@ export const getStatus = async (): Promise<ApiResponse> => {
   const res = await axios.get<ApiResponse>(`${API_URL}/`);
   return res.data;
 };
+
+export const syncOHLC = async (accountId: number, days = 90): Promise<ApiResponse> => {
+  const res = await axios.post<ApiResponse>(`${API_URL}/sync-ohlc/${accountId}?days=${days}`);
+  return res.data;
+};

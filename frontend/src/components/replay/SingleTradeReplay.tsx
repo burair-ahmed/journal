@@ -24,7 +24,13 @@ interface SingleTradeReplayProps {
   className?: string;
   masterControl?: {
     isPlaying: boolean;
-    onRegister: (callbacks: { play: () => void; pause: () => void }) => void;
+    speed?: number;
+    onRegister: (callbacks: { 
+      play: () => void; 
+      pause: () => void;
+      restart: () => void;
+      setSpeed: (speed: number) => void;
+    }) => void;
     onUnregister: () => void;
   };
 }

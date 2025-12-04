@@ -11,7 +11,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Bell, Filter, Repeat } from "lucide-react";
 import { useAccountContext } from "@/contexts/AccountContext";
-import { syncTrades } from "@/lib/api";
+import { syncTrades, syncOHLC } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import { NotificationsPopover } from "./NotificationsPopover";
@@ -37,18 +37,29 @@ const handleSync = async () => {
 
   try {
     setSyncing(true);
-    const res = await syncTrades(selectedAccountId);
+    
+    // 1. Sync Trades
+    const tradesRes = await syncTrades(selectedAccountId);
 
-    if (!res || res.new_count === undefined || res.updated_count === undefined) {
+    if (!tradesRes || tradesRes.new_count === undefined || tradesRes.updated_count === undefined) {
       toast.error("Failed to sync trades");
       return;
     }
 
-    if (res.new_count === 0 && res.updated_count === 0) {
-      toast(res.message || "No new trades to update", { icon: "ℹ️" });
+    // 2. Sync OHLC Data
+    try {
+      await syncOHLC(selectedAccountId);
+    } catch (ohlcErr) {
+      console.error("OHLC Sync failed:", ohlcErr);
+      // Don't block the success message for trades if OHLC fails, but maybe warn?
+      toast.error("Trades synced, but OHLC data failed to update.");
+    }
+
+    if (tradesRes.new_count === 0 && tradesRes.updated_count === 0) {
+      toast(tradesRes.message || "No new trades to update", { icon: "ℹ️" });
     } else {
       toast.success(
-        `${res.new_count} new and ${res.updated_count} updated trades synced successfully!`
+        `${tradesRes.new_count} new and ${tradesRes.updated_count} updated trades synced successfully!`
       );
     }
   } catch (err: any) {
