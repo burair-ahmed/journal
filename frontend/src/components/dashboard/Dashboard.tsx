@@ -29,6 +29,10 @@ import { ImpersonationBanner } from "@/components/mentor/ImpersonationBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TradeReplay } from "@/views/TradeReplay";
+import { AdminDashboard } from "@/views/admin/AdminDashboard";
+import { UserDirectory } from "@/views/admin/UserDirectory";
+import { UserDetail } from "@/views/admin/UserDetail";
+
 const DashboardContent = () => {
   const { selectedAccountId, accounts, isLoadingAccounts } = useAccountContext();
   const { activeView, setActiveView } = useUI();
@@ -184,6 +188,24 @@ const DashboardContent = () => {
         
         case "menteeView":
         return <MenteeDetailView />;
+        
+        // Admin views
+        case "adminDashboard":
+        return <AdminDashboard />;
+        
+        case "adminUsers":
+        return <UserDirectory />;
+        
+        case "adminUserDetail":
+        return <UserDetail />;
+        
+        case "adminAnalytics":
+        return (
+          <div className="text-center text-foreground mt-20">
+            <h1 className="text-2xl font-semibold mb-2">Advanced Analytics</h1>
+            <p className="text-muted-foreground">Coming soon</p>
+          </div>
+        );
         
       default:
         return (

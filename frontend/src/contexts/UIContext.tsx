@@ -18,7 +18,10 @@ type View =
   | "addAccount"
   | "profile"
   | "addTrade"
-  ;
+  | "adminDashboard"
+  | "adminUsers"
+  | "adminUserDetail"
+  | "adminAnalytics";
 
 interface UIContextType {
   activeView: View;

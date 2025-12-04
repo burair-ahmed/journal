@@ -16,16 +16,18 @@ import { useUI } from "@/contexts/UIContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import  {useRef, useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, LogOut, User as UserIcon } from "lucide-react";
+import{ MoreVertical, LogOut, User as UserIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useIsAdmin } from "@/hooks/useAdmin";
 
 export const Sidebar = () => {
   const { activeView, setActiveView } = useUI();
   const { user, setUser, loading, logout, isImpersonating, impersonatedMentorship } = useAuthContext();
+  const { data: isAdmin } = useIsAdmin();
   const [formData, setFormData] = useState({
     name: user?.name ?? "",
     username: user?.username ?? "",
@@ -58,6 +60,13 @@ export const Sidebar = () => {
     { icon: User, label: "Mentor Mode", view: "mentorMode", id: "mentorMode" },
     { icon: GraduationCap, label: "University", view: "university", id: "university" },
     { icon: Globe, label: "Resource Center", view: "resourceCenter", id: "resourceCenter" },
+  ];
+
+  // Admin menu items (only visible to admins)
+  const adminMenuItems = [
+    { icon: BarChart3, label: "Admin Dashboard", view: "adminDashboard", id: "adminDashboard", isAdmin: true },
+    { icon: Users, label: "Manage Users", view: "adminUsers", id: "adminUsers", isAdmin: true },
+    { icon: BarChart3, label: "Analytics", view: "adminAnalytics", id: "adminAnalytics", isAdmin: true },
   ];
 
   // Filter menu items based on mentor permissions
@@ -123,6 +132,21 @@ export const Sidebar = () => {
             </div>
           </div>
         ))}
+
+        {/* Admin Section (only visible to admins) */}
+        {isAdmin && (
+          <>
+            <div className="border-t border-white/10 my-2"></div>
+            <div className="text-xs text-muted-foreground px-3 mb-2">ADMIN</div>
+            <a
+              href="/admin"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="font-medium">Open Admin Panel</span>
+            </a>
+          </>
+        )}
       </nav>
 
       {/* Bottom Card */}
