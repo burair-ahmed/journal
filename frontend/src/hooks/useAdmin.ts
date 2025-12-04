@@ -7,6 +7,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from './useAuth';
+import toast from 'react-hot-toast';
+
+export interface ActivityLog {
+  id: string;
+  user_id: string;
+  action: string;
+  resource_type?: string;
+  resource_id?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  user?: {
+    email: string;
+    name?: string;
+  };
+}
 
 export interface AdminUser {
   id: string;
@@ -23,6 +38,48 @@ export interface AnalyticsOverview {
   new_users_today: number;
   total_trades: number;
 }
+
+// Helper: Log user activity
+export const logActivity = async (
+  action: string,
+  resourceType?: string,
+  resourceId?: string,
+  metadata?: Record<string, any>
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return;
+  
+  try {
+    await supabase.from('activity_log').insert({
+      user_id: user.id,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      metadata: metadata || {},
+    });
+  } catch (error) {
+    console.error('Failed to log activity:', error);
+  }
+};
+
+// Helper: Log admin action to audit trail
+const logAdminAction = async (
+  action: string,
+  targetUserId?: string,
+  metadata?: Record<string, any>
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return;
+  
+  await supabase.from('admin_audit_log').insert({
+    admin_user_id: user.id,
+    action,
+    target_user_id: targetUserId,
+    metadata: metadata || {},
+  });
+};
 
 // Check if current user is admin
 export const useIsAdmin = () => {
@@ -135,11 +192,14 @@ export const useSuspendUser = () => {
       
       if (error) throw error;
       
+      // Log to activity_log for Recent Activity display
+      await logActivity('user_suspend', 'user', userId);
       await logAdminAction('suspend_user', userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-user'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-recent-activity'] });
     },
   });
 };
@@ -157,11 +217,14 @@ export const useUnsuspendUser = () => {
       
       if (error) throw error;
       
+      // Log to activity_log for Recent Activity display
+      await logActivity('user_unsuspend', 'user', userId);
       await logAdminAction('unsuspend_user', userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-user'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-recent-activity'] });
     },
   });
 };
@@ -172,6 +235,9 @@ export const useDeleteUser = () => {
   
   return useMutation({
     mutationFn: async (userId: string) => {
+      // Log activity before delete (won't work after user is gone)
+      await logActivity('user_delete', 'user', userId);
+      
       const { error } = await supabase
         .from('users')
         .delete()
@@ -179,11 +245,57 @@ export const useDeleteUser = () => {
       
       if (error) throw error;
       
-      // Log action
       await logAdminAction('delete_user', userId, { permanent: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-recent-activity'] });
+    },
+  });
+};
+
+// Bulk Suspend Users
+export const useBulkSuspendUsers = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: 'suspended' })
+        .in('id', userIds);
+      
+      if (error) throw error;
+      
+      // Log actions
+      await Promise.all(userIds.map(id => logAdminAction('suspend_user', id, { bulk: true })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('Selected users suspended');
+    },
+  });
+};
+
+// Bulk Delete Users
+export const useBulkDeleteUsers = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .in('id', userIds);
+      
+      if (error) throw error;
+      
+      // Log actions
+      await Promise.all(userIds.map(id => logAdminAction('delete_user', id, { bulk: true, permanent: true })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('Selected users deleted');
     },
   });
 };
@@ -265,20 +377,47 @@ export const useAnalyticsOverview = () => {
   });
 };
 
-// Activity log interface
-export interface ActivityLog {
-  id: string;
-  user_id: string;
-  action: string;
-  resource_type?: string;
-  resource_id?: string;
-  metadata: Record<string, any>;
-  created_at: string;
-  user?: {
-    email: string;
-    name?: string;
-  };
-}
+// Get analytics history for charts (last 30 days)
+export const useAnalyticsHistory = () => {
+  return useQuery({
+    queryKey: ['admin-analytics-history'],
+    queryFn: async () => {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+
+      // Fetch users created in last 30 days
+      const { data: users } = await supabase
+        .from('users')
+        .select('created_at')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at');
+
+      // Fetch trades created in last 30 days
+      const { data: trades } = await supabase
+        .from('trades')
+        .select('created_at')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at');
+
+      // Process data by day
+      const history = [];
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const dayUsers = users?.filter(u => u.created_at.startsWith(dateStr)).length || 0;
+        const dayTrades = trades?.filter(t => t.created_at.startsWith(dateStr)).length || 0;
+        
+        history.push({
+          date: dateStr,
+          users: dayUsers,
+          trades: dayTrades,
+        });
+      }
+
+      return history;
+    },
+  });
+};
 
 // Get recent activity for admin dashboard
 export const useRecentActivity = (limit = 10) => {
@@ -311,48 +450,6 @@ export const useRecentActivity = (limit = 10) => {
       }
     },
     refetchInterval: 30000, // Refresh every 30 seconds
-  });
-};
-
-// Helper: Log user activity
-export const logActivity = async (
-  action: string,
-  resourceType?: string,
-  resourceId?: string,
-  metadata?: Record<string, any>
-) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return;
-  
-  try {
-    await supabase.from('activity_log').insert({
-      user_id: user.id,
-      action,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      metadata: metadata || {},
-    });
-  } catch (error) {
-    console.error('Failed to log activity:', error);
-  }
-};
-
-// Helper: Log admin action to audit trail
-const logAdminAction = async (
-  action: string,
-  targetUserId?: string,
-  metadata?: Record<string, any>
-) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return;
-  
-  await supabase.from('admin_audit_log').insert({
-    admin_user_id: user.id,
-    action,
-    target_user_id: targetUserId,
-    metadata: metadata || {},
   });
 };
 
@@ -394,6 +491,24 @@ export const formatActivityAction = (activity: ActivityLog): {
         icon: '📈',
         title: 'Trade added',
         description: `${email} added a trade`,
+      };
+    case 'user_suspend':
+      return {
+        icon: '🚫',
+        title: 'User suspended',
+        description: `Admin suspended a user`,
+      };
+    case 'user_unsuspend':
+      return {
+        icon: '✅',
+        title: 'User unsuspended',
+        description: `Admin restored user access`,
+      };
+    case 'user_delete':
+      return {
+        icon: '🗑️',
+        title: 'User deleted',
+        description: `Admin deleted a user`,
       };
     default:
       return {

@@ -1,14 +1,16 @@
 // views/admin/UserDirectory.tsx
 /**
- * User Directory - List all users with search and filters
+ * User Directory - List all users with search, filters, and bulk actions
  * Uses global color theme (pink/fuchsia)
  */
 
 import { useState } from 'react';
-import { useUsers, useSuspendUser, AdminUser } from '@/hooks/useAdmin';
+import { useUsers, useSuspendUser, useBulkSuspendUsers, useBulkDeleteUsers, AdminUser } from '@/hooks/useAdmin';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BulkActionsToolbar } from '@/components/admin/BulkActionsToolbar';
 import {
   Select,
   SelectContent,
@@ -28,20 +30,25 @@ import { Badge } from '@/components/ui/badge';
 import { Search, ChevronLeft, ChevronRight, Ban, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import Papa from 'papaparse';
 
 export const UserDirectory = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const navigate = useNavigate();
   
-  const { data, isLoading } = useUsers(
+  const { data, isLoading, refetch } = useUsers(
     page, 
     50, 
     search, 
     roleFilter === 'all' ? undefined : roleFilter
   );
+  
   const suspendUser = useSuspendUser();
+  const bulkSuspend = useBulkSuspendUsers();
+  const bulkDelete = useBulkDeleteUsers();
 
   const handleSuspend = async (userId: string, email: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -50,8 +57,73 @@ export const UserDirectory = () => {
     try {
       await suspendUser.mutateAsync(userId);
       toast.success('User suspended');
+      refetch();
     } catch (error) {
       toast.error('Failed to suspend user');
+    }
+  };
+
+  const handleBulkSuspend = async () => {
+    try {
+      await bulkSuspend.mutateAsync(selectedUsers);
+      setSelectedUsers([]);
+      refetch();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await bulkDelete.mutateAsync(selectedUsers);
+      setSelectedUsers([]);
+      refetch();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleExport = () => {
+    if (!data?.users) return;
+    
+    const usersToExport = selectedUsers.length > 0
+      ? data.users.filter(u => selectedUsers.includes(u.id))
+      : data.users;
+
+    const csv = Papa.unparse(usersToExport.map(u => ({
+      ID: u.id,
+      Email: u.email,
+      Name: u.name || '',
+      Role: u.role,
+      Joined: new Date(u.created_at).toLocaleDateString(),
+      LastActive: u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : 'Never'
+    })));
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const toggleSelectAll = () => {
+    if (!data?.users) return;
+    if (selectedUsers.length === data.users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(data.users.map(u => u.id));
+    }
+  };
+
+  const toggleSelectUser = (userId: string) => {
+    if (selectedUsers.includes(userId)) {
+      setSelectedUsers(prev => prev.filter(id => id !== userId));
+    } else {
+      setSelectedUsers(prev => [...prev, userId]);
     }
   };
 
@@ -63,13 +135,25 @@ export const UserDirectory = () => {
         return 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white border-0';
       case 'support':
         return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0';
+      case 'suspended':
+        return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0';
       default:
         return 'bg-muted text-muted-foreground';
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative">
+      <BulkActionsToolbar
+        selectedCount={selectedUsers.length}
+        onClearSelection={() => setSelectedUsers([])}
+        onSuspend={handleBulkSuspend}
+        onDelete={handleBulkDelete}
+        onExport={handleExport}
+        isSuspending={bulkSuspend.isPending}
+        isDeleting={bulkDelete.isPending}
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-pink-600">
@@ -103,6 +187,7 @@ export const UserDirectory = () => {
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="super_admin">Super Admin</SelectItem>
               <SelectItem value="support">Support</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -113,6 +198,12 @@ export const UserDirectory = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-[50px]">
+                <Checkbox 
+                  checked={data?.users?.length > 0 && selectedUsers.length === data?.users?.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead className="font-semibold">Email</TableHead>
               <TableHead className="font-semibold">Name</TableHead>
               <TableHead className="font-semibold">Role</TableHead>
@@ -124,7 +215,7 @@ export const UserDirectory = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-8">
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                     <span>Loading users...</span>
@@ -133,7 +224,7 @@ export const UserDirectory = () => {
               </TableRow>
             ) : data?.users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -141,9 +232,15 @@ export const UserDirectory = () => {
               data?.users.map((user: AdminUser) => (
                 <TableRow 
                   key={user.id} 
-                  className="cursor-pointer hover:bg-primary/5 transition-colors"
+                  className={`cursor-pointer transition-colors ${selectedUsers.includes(user.id) ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
                   onClick={() => navigate(`/admin/users/${user.id}`)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox 
+                      checked={selectedUsers.includes(user.id)}
+                      onCheckedChange={() => toggleSelectUser(user.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>{user.name || '-'}</TableCell>
                   <TableCell>
@@ -172,14 +269,16 @@ export const UserDirectory = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => handleSuspend(user.id, user.email, e)}
-                      >
-                        <Ban className="h-4 w-4" />
-                      </Button>
+                      {user.role !== 'suspended' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleSuspend(user.id, user.email, e)}
+                        >
+                          <Ban className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

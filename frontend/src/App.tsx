@@ -12,6 +12,9 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminDashboard } from "./views/admin/AdminDashboard";
 import { UserDirectory } from "./views/admin/UserDirectory";
 import { UserDetail } from "./views/admin/UserDetail";
+import { BlogList } from "./views/admin/BlogList";
+import { BlogEditor } from "./views/admin/BlogEditor";
+import { AdminAnalytics } from "./views/admin/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -35,9 +38,11 @@ const App = () => (
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserDirectory />} />
             <Route path="users/:userId" element={<UserDetail />} />
-            <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analytics</h1><p className="text-muted-foreground">Coming soon</p></div>} />
-            <Route path="blog" element={<div className="p-6"><h1 className="text-2xl font-bold">Blog Management</h1><p className="text-muted-foreground">Coming soon</p></div>} />
-            <Route path="settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">Coming soon</p></div>} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="blog" element={<BlogList />} />
+            <Route path="blog/new" element={<BlogEditor />} />
+            <Route path="blog/edit/:postId" element={<BlogEditor />} />
+            <Route path="settings" element={<div className="p-6">Settings Placeholder</div>} />
           </Route>
           
           {/* 404 - Must be last */}
