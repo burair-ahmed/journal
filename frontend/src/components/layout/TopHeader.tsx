@@ -61,6 +61,14 @@ const handleSync = async () => {
       toast.success(
         `${tradesRes.new_count} new and ${tradesRes.updated_count} updated trades synced successfully!`
       );
+      
+      // Log trade sync activity
+      const { logActivity } = await import('@/hooks/useAdmin');
+      await logActivity('trade_sync', 'trade', String(selectedAccountId), {
+        new_count: tradesRes.new_count,
+        updated_count: tradesRes.updated_count,
+        count: tradesRes.new_count + tradesRes.updated_count
+      });
     }
   } catch (err: any) {
     console.error(err);

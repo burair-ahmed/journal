@@ -4,21 +4,24 @@
  * Uses global color theme (pink/fuchsia)
  */
 
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUserDetail, useSuspendUser, useDeleteUser } from '@/hooks/useAdmin';
+import { useUserDetail, useSuspendUser, useUnsuspendUser, useDeleteUser } from '@/hooks/useAdmin';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   ArrowLeft,
   Ban,
   Trash2,
-  Mail,
   Calendar,
   TrendingUp,
   Activity,
   Shield,
   CreditCard,
+  Loader2,
+  CheckCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -29,44 +32,72 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const UserDetail = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { data, isLoading } = useUserDetail(userId!);
+  const { data, isLoading, refetch } = useUserDetail(userId!);
   const suspendUser = useSuspendUser();
+  const unsuspendUser = useUnsuspendUser();
   const deleteUser = useDeleteUser();
+  
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [unsuspendDialogOpen, setUnsuspendDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const handleSuspend = async () => {
     if (!userId || !data) return;
-    if (!confirm(`Are you sure you want to suspend ${data.user.email}?`)) return;
 
     try {
       await suspendUser.mutateAsync(userId);
-      toast.success('User suspended');
-    } catch (error) {
-      toast.error('Failed to suspend user');
+      toast.success(`${data.user.email} has been suspended`);
+      setSuspendDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to suspend user');
+    }
+  };
+
+  const handleUnsuspend = async () => {
+    if (!userId || !data) return;
+
+    try {
+      await unsuspendUser.mutateAsync(userId);
+      toast.success(`${data.user.email} has been unsuspended`);
+      setUnsuspendDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to unsuspend user');
     }
   };
 
   const handleDelete = async () => {
     if (!userId || !data) return;
-    const confirmText = `DELETE ${data.user.email}`;
-    const input = prompt(
-      `This action cannot be undone. Type "${confirmText}" to confirm:`
-    );
-
-    if (input !== confirmText) {
-      toast.error('Deletion cancelled');
+    
+    const expectedText = `DELETE ${data.user.email}`;
+    if (deleteConfirmText !== expectedText) {
+      toast.error('Confirmation text does not match');
       return;
     }
 
     try {
       await deleteUser.mutateAsync(userId);
-      toast.success('User deleted');
+      toast.success(`${data.user.email} has been deleted`);
+      setDeleteDialogOpen(false);
       navigate('/admin/users');
-    } catch (error) {
-      toast.error('Failed to delete user');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete user');
     }
   };
 
@@ -98,6 +129,7 @@ export const UserDetail = () => {
   }
 
   const { user, accounts, trade_count } = data;
+  const isSuspended = user.role === 'suspended';
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
@@ -107,6 +139,8 @@ export const UserDetail = () => {
         return 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white border-0';
       case 'support':
         return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0';
+      case 'suspended':
+        return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -114,6 +148,96 @@ export const UserDetail = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Suspend Dialog */}
+      <AlertDialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Suspend User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to suspend <strong>{user.email}</strong>?
+              <br /><br />
+              This will prevent them from accessing the platform.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSuspend}
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={suspendUser.isPending}
+            >
+              {suspendUser.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Suspending...</>
+              ) : (
+                'Suspend User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unsuspend Dialog */}
+      <AlertDialog open={unsuspendDialogOpen} onOpenChange={setUnsuspendDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsuspend User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unsuspend <strong>{user.email}</strong>?
+              <br /><br />
+              They will be able to access the platform again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnsuspend}
+              className="bg-green-500 hover:bg-green-600"
+              disabled={unsuspendUser.isPending}
+            >
+              {unsuspendUser.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Unsuspending...</>
+              ) : (
+                'Unsuspend User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Delete User Permanently</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action <strong>cannot be undone</strong>. This will permanently delete the user account.
+              <br /><br />
+              Type <code className="bg-muted px-1 rounded">DELETE {user.email}</code> to confirm:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder={`DELETE ${user.email}`}
+            className="mt-2"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={deleteUser.isPending || deleteConfirmText !== `DELETE ${user.email}`}
+            >
+              {deleteUser.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deleting...</>
+              ) : (
+                'Delete User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -129,19 +253,31 @@ export const UserDetail = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSuspend}
-            className="border-orange-500/50 text-orange-600 hover:bg-orange-50"
-          >
-            <Ban className="h-4 w-4 mr-2" />
-            Suspend
-          </Button>
+          {isSuspended ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setUnsuspendDialogOpen(true)}
+              className="border-green-500/50 text-green-600 hover:bg-green-50"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Unsuspend
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSuspendDialogOpen(true)}
+              className="border-orange-500/50 text-orange-600 hover:bg-orange-50"
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Suspend
+            </Button>
+          )}
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={handleDelete}
+            onClick={() => setDeleteDialogOpen(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete

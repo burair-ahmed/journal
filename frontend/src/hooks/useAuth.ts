@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import type { Mentorship } from "@/hooks/mentor/useMentorships";
+import { logActivity } from "@/hooks/useAdmin";
 
 export type AuthUser = {
   id: string;
@@ -88,6 +89,10 @@ export function useAuth() {
     });
     if (error) throw error;
     await loadUser(); // refresh profile
+    
+    // Log login activity
+    await logActivity('login', 'session');
+    
     return data.user;
   };
 
@@ -98,6 +103,10 @@ export function useAuth() {
     });
     if (error) throw error;
     await loadUser();
+    
+    // Log registration activity
+    await logActivity('register', 'session');
+    
     return data.user;
   };
 

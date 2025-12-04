@@ -12,7 +12,7 @@ export interface AdminUser {
   id: string;
   email: string;
   name?: string;
-  role: 'user' | 'admin' | 'super_admin' | 'support';
+  role: 'user' | 'admin' | 'super_admin' | 'support' | 'suspended';
   created_at: string;
   last_sign_in_at?: string;
 }
@@ -128,7 +128,6 @@ export const useSuspendUser = () => {
   
   return useMutation({
     mutationFn: async (userId: string) => {
-      // Update role to suspended
       const { error } = await supabase
         .from('users')
         .update({ role: 'suspended' })
@@ -136,11 +135,33 @@ export const useSuspendUser = () => {
       
       if (error) throw error;
       
-      // Log action
       await logAdminAction('suspend_user', userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user'] });
+    },
+  });
+};
+
+// Unsuspend user (restore to regular user)
+export const useUnsuspendUser = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: 'user' })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      await logAdminAction('unsuspend_user', userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user'] });
     },
   });
 };
@@ -167,7 +188,7 @@ export const useDeleteUser = () => {
   });
 };
 
-// Get analytics overview
+// Get analytics overview with trends
 export const useAnalyticsOverview = () => {
   return useQuery({
     queryKey: ['admin-analytics-overview'],
@@ -177,13 +198,18 @@ export const useAnalyticsOverview = () => {
         .from('users')
         .select('id', { count: 'exact', head: true });
       
-      // Active users (last 24h)
+      // Active users (last 24h) - use last_sign_in_at (always available via auth)
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const { count: activeUsers } = await supabase
+      
+      // Try last_active_at first, fallback to last_sign_in_at
+      let activeUsers = 0;
+      const { count: activeCount, error: activeError } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
         .gte('last_sign_in_at', yesterday.toISOString());
+      
+      activeUsers = activeCount || 0;
       
       // New users today
       const today = new Date();
@@ -197,15 +223,119 @@ export const useAnalyticsOverview = () => {
       const { count: totalTrades } = await supabase
         .from('trades')
         .select('id', { count: 'exact', head: true });
+
+      // Calculate trends (compare to yesterday)
+      const dayBeforeYesterday = new Date();
+      dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+      
+      const { count: activeYesterday } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .gte('last_sign_in_at', dayBeforeYesterday.toISOString())
+        .lt('last_sign_in_at', yesterday.toISOString());
+
+      const yesterdayStart = new Date();
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+      yesterdayStart.setHours(0, 0, 0, 0);
+      const yesterdayEnd = new Date();
+      yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+      yesterdayEnd.setHours(23, 59, 59, 999);
+      
+      const { count: newYesterday } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', yesterdayStart.toISOString())
+        .lt('created_at', yesterdayEnd.toISOString());
       
       return {
         total_users: totalUsers || 0,
-        active_users_24h: activeUsers || 0,
+        active_users_24h: activeUsers,
         new_users_today: newUsers || 0,
         total_trades: totalTrades || 0,
+        trends: {
+          active_change: activeYesterday 
+            ? Math.round((activeUsers - activeYesterday) / activeYesterday * 100)
+            : 0,
+          new_users_change: newYesterday
+            ? Math.round(((newUsers || 0) - (newYesterday || 1)) / (newYesterday || 1) * 100)
+            : 0,
+        }
       };
     },
   });
+};
+
+// Activity log interface
+export interface ActivityLog {
+  id: string;
+  user_id: string;
+  action: string;
+  resource_type?: string;
+  resource_id?: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  user?: {
+    email: string;
+    name?: string;
+  };
+}
+
+// Get recent activity for admin dashboard
+export const useRecentActivity = (limit = 10) => {
+  return useQuery({
+    queryKey: ['admin-recent-activity', limit],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('activity_log')
+          .select(`
+            *,
+            user:users!user_id (
+              email,
+              name
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        
+        if (error) {
+          // Table might not exist, return empty array
+          console.warn('activity_log table may not exist:', error.message);
+          return [];
+        }
+        
+        return data as ActivityLog[];
+      } catch (err) {
+        console.warn('Failed to fetch activity log:', err);
+        return [];
+      }
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+};
+
+// Helper: Log user activity
+export const logActivity = async (
+  action: string,
+  resourceType?: string,
+  resourceId?: string,
+  metadata?: Record<string, any>
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return;
+  
+  try {
+    await supabase.from('activity_log').insert({
+      user_id: user.id,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      metadata: metadata || {},
+    });
+  } catch (error) {
+    console.error('Failed to log activity:', error);
+  }
 };
 
 // Helper: Log admin action to audit trail
@@ -224,4 +354,52 @@ const logAdminAction = async (
     target_user_id: targetUserId,
     metadata: metadata || {},
   });
+};
+
+// Format activity for display
+export const formatActivityAction = (activity: ActivityLog): { 
+  icon: string; 
+  title: string; 
+  description: string;
+} => {
+  const email = activity.user?.email || 'Unknown user';
+  
+  switch (activity.action) {
+    case 'login':
+      return {
+        icon: '🔐',
+        title: 'User logged in',
+        description: email,
+      };
+    case 'register':
+      return {
+        icon: '👤',
+        title: 'New user registered',
+        description: email,
+      };
+    case 'trade_sync':
+      return {
+        icon: '📊',
+        title: 'Trades synced',
+        description: `${email} synced ${activity.metadata?.count || 'N/A'} trades`,
+      };
+    case 'account_add':
+      return {
+        icon: '💳',
+        title: 'Account added',
+        description: `${email} connected ${activity.metadata?.alias || 'new account'}`,
+      };
+    case 'trade_add':
+      return {
+        icon: '📈',
+        title: 'Trade added',
+        description: `${email} added a trade`,
+      };
+    default:
+      return {
+        icon: '⚡',
+        title: activity.action.replace(/_/g, ' '),
+        description: email,
+      };
+  }
 };
