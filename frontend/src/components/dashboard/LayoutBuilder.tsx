@@ -1,6 +1,7 @@
 // components/dashboard/LayoutBuilder.tsx
 /**
- * Custom Layout Builder - Create empty box layouts and insert widgets
+ * Advanced Custom Layout Builder
+ * Create empty box layouts with various slot sizes and insert widgets
  */
 
 import { useState } from 'react';
@@ -25,19 +26,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Grid3x3, Trash2, Save } from 'lucide-react';
+import { Plus, Grid3x3, Trash2, Save, Square, RectangleHorizontal, RectangleVertical, Maximize } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DashboardWidget, WidgetSize } from '@/hooks/useDashboardPreferences';
 
 interface LayoutSlot {
   id: string;
-  widgetId: string | null; // null = empty slot
-  size: WidgetSize;
+  widgetId: string | null;
+  colSpan: number; // 1, 2, 3, or 4
+  rowSpan: number; // 1 or 2
 }
 
 interface CustomLayout {
   id: string;
   name: string;
+  gridColumns: number;
   slots: LayoutSlot[];
 }
 
@@ -46,18 +49,32 @@ interface LayoutBuilderProps {
   onSaveLayout: (layout: CustomLayout) => void;
 }
 
+// Slot size presets
+const SLOT_SIZES = [
+  { id: '1x1', label: '1×1', icon: Square, colSpan: 1, rowSpan: 1 },
+  { id: '2x1', label: '2×1', icon: RectangleHorizontal, colSpan: 2, rowSpan: 1 },
+  { id: '3x1', label: '3×1', icon: RectangleHorizontal, colSpan: 3, rowSpan: 1 },
+  { id: '4x1', label: '4×1', icon: RectangleHorizontal, colSpan: 4, rowSpan: 1 },
+  { id: '1x2', label: '1×2', icon: RectangleVertical, colSpan: 1, rowSpan: 2 },
+  { id: '2x2', label: '2×2', icon: Square, colSpan: 2, rowSpan: 2 },
+  { id: '3x2', label: '3×2', icon: RectangleHorizontal, colSpan: 3, rowSpan: 2 },
+  { id: 'full', label: 'Full Width', icon: Maximize, colSpan: 12, rowSpan: 1 },
+  { id: 'full-tall', label: 'Full Tall', icon: Maximize, colSpan: 12, rowSpan: 2 },
+];
+
 export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [layoutName, setLayoutName] = useState('');
-  const [gridColumns, setGridColumns] = useState<'2' | '3' | '4'>('3');
+  const [gridColumns, setGridColumns] = useState<number>(12); // CSS Grid with 12 columns
   const [slots, setSlots] = useState<LayoutSlot[]>([]);
 
-  // Add empty slot
-  const handleAddSlot = () => {
+  // Add slot with specific size
+  const handleAddSlot = (colSpan: number, rowSpan: number) => {
     const newSlot: LayoutSlot = {
       id: `slot-${Date.now()}-${Math.random()}`,
       widgetId: null,
-      size: 'normal',
+      colSpan,
+      rowSpan,
     };
     setSlots([...slots, newSlot]);
   };
@@ -67,17 +84,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
     setSlots(slots.filter(s => s.id !== slotId));
   };
 
-  // Assign widget to slot
-  const handleAssignWidget = (slotId: string, widgetId: string | null) => {
-    setSlots(slots.map(s => s.id === slotId ? { ...s, widgetId } : s));
-  };
-
-  // Change slot size
-  const handleChangeSize = (slotId: string, size: WidgetSize) => {
-    setSlots(slots.map(s => s.id === slotId ? { ...s, size } : s));
-  };
-
-  // Save layout
+  // Save layout (without widgets assigned)
   const handleSave = () => {
     if (!layoutName.trim()) {
       alert('Please enter a layout name');
@@ -87,6 +94,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
     const newLayout: CustomLayout = {
       id: `custom-${Date.now()}`,
       name: layoutName,
+      gridColumns,
       slots,
     };
 
@@ -96,49 +104,48 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
     setSlots([]);
   };
 
-  // Quick create layouts
-  const handleQuickCreate = (type: '2col' | '3col' | 'sidebar') => {
+  // Quick create templates
+  const handleQuickCreate = (type: 'dashboard' | 'analytics' | 'minimal' | 'sidebar') => {
     let quickSlots: LayoutSlot[] = [];
     
     switch (type) {
-      case '2col':
+      case 'dashboard':
         quickSlots = [
-          { id: 'slot-1', widgetId: null, size: 'normal' },
-          { id: 'slot-2', widgetId: null, size: 'normal' },
-          { id: 'slot-3', widgetId: null, size: 'expanded' },
-          { id: 'slot-4', widgetId: null, size: 'normal' },
+          { id: 'slot-1', widgetId: null, colSpan: 4, rowSpan: 1 },
+          { id: 'slot-2', widgetId: null, colSpan: 4, rowSpan: 1 },
+          { id: 'slot-3', widgetId: null, colSpan: 4, rowSpan: 1 },
+          { id: 'slot-4', widgetId: null, colSpan: 12, rowSpan: 1 },
+          { id: 'slot-5', widgetId: null, colSpan: 6, rowSpan: 1 },
+          { id: 'slot-6', widgetId: null, colSpan: 6, rowSpan: 1 },
         ];
-        setGridColumns('2');
         break;
-      case '3col':
+      case 'analytics':
         quickSlots = [
-          { id: 'slot-1', widgetId: null, size: 'normal' },
-          { id: 'slot-2', widgetId: null, size: 'normal' },
-          { id: 'slot-3', widgetId: null, size: 'normal' },
-          { id: 'slot-4', widgetId: null, size: 'expanded' },
-          { id: 'slot-5', widgetId: null, size: 'normal' },
-          { id: 'slot-6', widgetId: null, size: 'normal' },
+          { id: 'slot-1', widgetId: null, colSpan: 3, rowSpan: 1 },
+          { id: 'slot-2', widgetId: null, colSpan: 3, rowSpan: 1 },
+          { id: 'slot-3', widgetId: null, colSpan: 3, rowSpan: 1 },
+          { id: 'slot-4', widgetId: null, colSpan: 3, rowSpan: 1 },
+          { id: 'slot-5', widgetId: null, colSpan: 8, rowSpan: 2 },
+          { id: 'slot-6', widgetId: null, colSpan: 4, rowSpan: 2 },
         ];
-        setGridColumns('3');
+        break;
+      case 'minimal':
+        quickSlots = [
+          { id: 'slot-1', widgetId: null, colSpan: 6, rowSpan: 1 },
+          { id: 'slot-2', widgetId: null, colSpan: 6, rowSpan: 1 },
+          { id: 'slot-3', widgetId: null, colSpan: 12, rowSpan: 1 },
+        ];
         break;
       case 'sidebar':
         quickSlots = [
-          { id: 'slot-1', widgetId: null, size: 'compact' },
-          { id: 'slot-2', widgetId: null, size: 'expanded' },
-          { id: 'slot-3', widgetId: null, size: 'compact' },
-          { id: 'slot-4', widgetId: null, size: 'expanded' },
+          { id: 'slot-1', widgetId: null, colSpan: 3, rowSpan: 2 },
+          { id: 'slot-2', widgetId: null, colSpan: 9, rowSpan: 1 },
+          { id: 'slot-3', widgetId: null, colSpan: 9, rowSpan: 1 },
         ];
-        setGridColumns('4');
         break;
     }
     
     setSlots(quickSlots);
-  };
-
-  const sizeClasses = {
-    compact: 'col-span-1',
-    normal: 'col-span-1 md:col-span-2 lg:col-span-1',
-    expanded: 'col-span-full',
   };
 
   return (
@@ -150,11 +157,11 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Custom Layout</DialogTitle>
           <DialogDescription>
-            Design your perfect dashboard layout by adding empty slots and assigning widgets
+            Design your perfect dashboard by adding empty slots. You'll assign widgets after saving.
           </DialogDescription>
         </DialogHeader>
 
@@ -170,40 +177,33 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
             />
           </div>
 
-          {/* Grid Columns */}
-          <div className="space-y-2">
-            <Label htmlFor="grid-columns">Grid Columns</Label>
-            <Select value={gridColumns} onValueChange={(v) => setGridColumns(v as '2' | '3' | '4')}>
-              <SelectTrigger id="grid-columns">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">2 Columns</SelectItem>
-                <SelectItem value="3">3 Columns</SelectItem>
-                <SelectItem value="4">4 Columns</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Quick Create Templates */}
           <div className="space-y-2">
             <Label>Quick Templates</Label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleQuickCreate('2col')}
+                onClick={() => handleQuickCreate('dashboard')}
               >
-                2 Column Layout
+                📊 Dashboard
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleQuickCreate('3col')}
+                onClick={() => handleQuickCreate('analytics')}
               >
-                3 Column Layout
+                📈 Analytics
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickCreate('minimal')}
+              >
+                ✨ Minimal
               </Button>
               <Button
                 type="button"
@@ -211,31 +211,46 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
                 size="sm"
                 onClick={() => handleQuickCreate('sidebar')}
               >
-                Sidebar Layout
+                📑 Sidebar
               </Button>
             </div>
           </div>
 
-          {/* Add Slot Button */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAddSlot}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Empty Slot
-          </Button>
+          {/* Slot Size Buttons */}
+          <div className="space-y-2">
+            <Label>Add Slots</Label>
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+              {SLOT_SIZES.map((size) => {
+                const Icon = size.icon;
+                return (
+                  <Button
+                    key={size.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddSlot(size.colSpan, size.rowSpan)}
+                    className="flex flex-col items-center gap-1 h-auto py-2"
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-xs">{size.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Layout Preview */}
           <div className="space-y-2">
-            <Label>Layout Preview</Label>
-            <div className={cn(
-              "grid gap-4 p-4 bg-muted/30 rounded-lg border-2 border-dashed min-h-[200px]",
-              gridColumns === '2' && 'grid-cols-2',
-              gridColumns === '3' && 'grid-cols-3',
-              gridColumns === '4' && 'grid-cols-4'
-            )}>
+            <Label>Layout Preview ({slots.length} slots)</Label>
+            <div 
+              className="p-4 bg-muted/30 rounded-lg border-2 border-dashed min-h-[300px]"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
+                gap: '1rem',
+                gridAutoRows: 'minmax(100px, auto)'
+              }}
+            >
               <AnimatePresence>
                 {slots.map((slot, index) => (
                   <motion.div
@@ -243,59 +258,31 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className={cn(sizeClasses[slot.size])}
+                    style={{
+                      gridColumn: `span ${slot.colSpan}`,
+                      gridRow: `span ${slot.rowSpan}`,
+                    }}
                   >
-                    <Card className="p-4 h-full min-h-[120px] relative">
-                      {/* Slot Controls */}
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleRemoveSlot(slot.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                    <Card className="p-4 h-full relative bg-card/50 border-2 border-dashed flex items-center justify-center">
+                      {/* Slot Info */}
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground mb-1">Slot {index + 1}</div>
+                        <div className="text-sm font-medium">
+                          {slot.colSpan}×{slot.rowSpan}
+                        </div>
+                        <Plus className="h-6 w-6 mx-auto mt-2 text-muted-foreground" />
                       </div>
 
-                      {/* Slot Content */}
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Slot {index + 1}</div>
-
-                        {/* Widget Selector */}
-                        <Select
-                          value={slot.widgetId || 'none'}
-                          onValueChange={(v) => handleAssignWidget(slot.id, v === 'none' ? null : v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Choose widget..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Empty Slot</SelectItem>
-                            {availableWidgets.map((widget) => (
-                              <SelectItem key={widget.id} value={widget.id}>
-                                {widget.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Size Selector */}
-                        <Select
-                          value={slot.size}
-                          onValueChange={(v) => handleChangeSize(slot.id, v as WidgetSize)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="compact">Compact</SelectItem>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="expanded">Expanded</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {/* Remove Button */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={() => handleRemoveSlot(slot.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </Card>
                   </motion.div>
                 ))}
@@ -303,7 +290,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
 
               {slots.length === 0 && (
                 <div className="col-span-full flex items-center justify-center text-muted-foreground text-sm py-12">
-                  Add slots to start building your layout
+                  Choose a template or click the slot size buttons above to start building
                 </div>
               )}
             </div>
@@ -314,7 +301,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} className="gap-2">
+          <Button type="button" onClick={handleSave} className="gap-2" disabled={slots.length === 0}>
             <Save className="h-4 w-4" />
             Save Layout
           </Button>

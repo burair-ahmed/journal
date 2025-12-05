@@ -34,6 +34,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { DraggableWidget } from './DraggableWidget';
 import { DashboardCustomizationBar } from './DashboardCustomizationBar';
+import { EmptySlot } from './EmptySlot';
 import {
   useDashboardPreferences,
   useUpdateDashboardLayout,
@@ -56,6 +57,7 @@ const DashboardContent = () => {
   // ✨ Dashboard customization state
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null); // For drag overlay
+  const [activeCustomLayout, setActiveCustomLayout] = useState<any | null>(null); // Custom layout
   const { data: preferences, isLoading: prefsLoading } = useDashboardPreferences();
   const updateLayout = useUpdateDashboardLayout();
   const toggleVisibility = useToggleWidgetVisibility();
@@ -140,9 +142,26 @@ const DashboardContent = () => {
 
   // ✨ Handle custom layout save
   const handleSaveCustomLayout = (customLayout: any) => {
-    // For now, just log it - we can implement custom layout storage later
     console.log('Custom layout saved:', customLayout);
-    toast.success(`Layout "${customLayout.name}" created! (Coming soon: save to presets)`);
+    // Store in local state for now
+    setActiveCustomLayout(customLayout);
+    toast.success(`Layout "${customLayout.name}" created! Assign widgets by clicking the + icons.`);
+  };
+
+  // ✨ Handle widget assignment to empty slot
+  const handleAssignWidget = (slotId: string, widgetId: string) => {
+    if (!activeCustomLayout) return;
+
+    const updatedSlots = activeCustomLayout.slots.map((slot: any) =>
+      slot.id === slotId ? { ...slot, widgetId } : slot
+    );
+
+    setActiveCustomLayout({
+      ...activeCustomLayout,
+      slots: updatedSlots,
+    });
+
+    toast.success('Widget added to layout!');
   };
 
   // ✨ Widget map
@@ -226,7 +245,76 @@ const DashboardContent = () => {
               onSaveCustomLayout={handleSaveCustomLayout}
             />
 
-            {/* Draggable Widget Grid */}
+            {/* ✨ Custom Layout View */}
+            {activeCustomLayout ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{activeCustomLayout.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Click + to add widgets to your layout
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setActiveCustomLayout(null);
+                      toast.success('Returned to standard layout');
+                    }}
+                  >
+                    Exit Custom Layout
+                  </Button>
+                </div>
+
+                {/* Custom Layout Grid */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${activeCustomLayout.gridColumns}, minmax(0, 1fr))`,
+                    gap: '1.5rem',
+                    gridAutoRows: 'minmax(150px, auto)',
+                  }}
+                >
+                  {activeCustomLayout.slots.map((slot: any) => (
+                    <div
+                      key={slot.id}
+                      style={{
+                        gridColumn: `span ${slot.colSpan}`,
+                        gridRow: `span ${slot.rowSpan}`,
+                      }}
+                    >
+                      {slot.widgetId ? (
+                        // Render assigned widget
+                        <div className="h-full">
+                          {getWidgetComponent(slot.widgetId)}
+                        </div>
+                      ) : (
+                        // Render empty slot with + icon
+                        <EmptySlot
+                          slotId={slot.id}
+                          colSpan={slot.colSpan}
+                          rowSpan={slot.rowSpan}
+                          onSelectWidget={handleAssignWidget}
+                          renderWidget={getWidgetComponent}
+                          availableWidgets={[
+                            { id: 'account_balance', name: 'Account Balance' },
+                            { id: 'profit_factor', name: 'Profit Factor' },
+                            { id: 'trade_win', name: 'Win Rate' },
+                            { id: 'symbol_distribution', name: 'Symbol Distribution' },
+                            { id: 'calendar', name: 'Trading Calendar' },
+                            { id: 'time_heatmap', name: 'Time Heatmap' },
+                            { id: 'charts_grid', name: 'Performance Charts' },
+                          ]}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Standard Draggable Widget Grid */}
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -265,6 +353,8 @@ const DashboardContent = () => {
                 ) : null}
               </DragOverlay>
             </DndContext>
+            </>
+          )}
           </motion.div>
         );
 
