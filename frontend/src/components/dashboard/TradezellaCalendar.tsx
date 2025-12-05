@@ -5,7 +5,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, BarChart3, Layers, Target } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useDailyPnL, DailyStat, useTrades, Trade } from "@/hooks/useTrades";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ interface CalendarDay {
 
 type ViewMode = "day" | "month" | "year";
 
+// ✨ Enhanced Weekly Summary Widget
 const WeeklySummaryWidget = ({
   dailyPnL,
   currentMonth,
@@ -30,7 +31,7 @@ const WeeklySummaryWidget = ({
   currentYear: number;
 }) => {
   const weeklyData = useMemo(() => {
-    const result: { week: number; pnl: number; days: number }[] = [];
+    const result: { week: number; pnl: number; days: number; tradingDays: number }[] = [];
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
     for (let d = 1; d <= daysInMonth; d++) {
@@ -43,42 +44,67 @@ const WeeklySummaryWidget = ({
       const stat = dailyPnL.find((s) => s.date === dateStr);
 
       if (!result[weekNum - 1]) {
-        result[weekNum - 1] = { week: weekNum, pnl: 0, days: 0 };
+        result[weekNum - 1] = { week: weekNum, pnl: 0, days: 0, tradingDays: 0 };
       }
 
       if (stat) {
         result[weekNum - 1].pnl += stat.pnl;
-        result[weekNum - 1].days += stat.trades > 0 ? 1 : 0;
+        result[weekNum - 1].tradingDays += stat.trades > 0 ? 1 : 0;
       }
+      result[weekNum - 1].days++;
     }
     return result;
   }, [dailyPnL, currentMonth, currentYear]);
 
+  const totalPnL = weeklyData.reduce((sum, w) => sum + w.pnl, 0);
+
   return (
-    <div className="space-y-2 mt-6">
-      <h3 className="text-lg font-semibold">Weekly Summary</h3>
-      <div className="grid grid-cols-7 gap-2">
+    <div className="space-y-3 mt-6">
+      {/* Enhanced Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Weekly Summary</h3>
+        <span className={cn(
+          "text-sm font-bold",
+          totalPnL > 0 ? "text-profit" : totalPnL < 0 ? "text-loss" : "text-muted-foreground"
+        )}>
+          {totalPnL >= 0 ? `$${totalPnL.toFixed(2)}` : `-$${Math.abs(totalPnL).toFixed(2)}`}
+        </span>
+      </div>
+
+      {/* Enhanced Week Cards */}
+      <div className="space-y-2">
         {weeklyData.map((week) => (
           <div
             key={week.week}
-            className="col-span-7 p-3 rounded-lg border bg-transparent shadow-sm flex justify-between items-center"
+            className={cn(
+              "p-3 rounded-lg border bg-transparent shadow-sm flex justify-between items-center",
+              "transition-all duration-200 hover:shadow-md hover:border-primary/30",
+              // Subtle background tint based on PnL
+              week.pnl > 0 && "bg-profit/5 border-profit/20",
+              week.pnl < 0 && "bg-loss/5 border-loss/20",
+              week.pnl === 0 && "border-border"
+            )}
           >
-            <div>
-              <div className="text-sm font-medium">Week {week.week}</div>
-              <div className="text-xs text-muted-foreground">
-                {week.days} days
+            <div className="flex items-center gap-3">
+              {/* PnL Indicator */}
+              <div className={cn(
+                "w-1 h-8 rounded-full",
+                week.pnl > 0 ? "bg-profit" : week.pnl < 0 ? "bg-loss" : "bg-muted"
+              )} />
+              <div>
+                <div className="text-sm font-medium">Week {week.week}</div>
+                <div className="text-xs text-muted-foreground">
+                  {week.tradingDays} trading day{week.tradingDays !== 1 ? 's' : ''}
+                </div>
               </div>
             </div>
             <div
-              className={`font-semibold ${
-                week.pnl > 0
-                  ? "text-profit"
-                  : week.pnl < 0
-                  ? "text-loss"
-                  : "text-muted-foreground"
-              }`}
+              className={cn(
+                "font-semibold text-right",
+                week.pnl > 0 ? "text-profit" : week.pnl < 0 ? "text-loss" : "text-muted-foreground"
+              )}
             >
-              {week.pnl === 0 ? "$0.00" : `$${week.pnl.toFixed(2)}`}
+              {week.pnl === 0 ? "$0.00" : week.pnl > 0 ? `$${week.pnl.toFixed(2)}` : `-$${Math.abs(week.pnl).toFixed(2)}`}
             </div>
           </div>
         ))}
@@ -101,23 +127,37 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
   const dailyPnL: DailyStat[] = data?.stats ?? [];
   const deposit = data?.deposit ?? 10000;
 
+  // ✨ Enhanced day class with better visual hierarchy
   const getDayClass = (day: CalendarDay) => {
     const baseClass =
-      "min-h-[100px] p-2 border border-border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all hover:shadow-sm";
+      "min-h-[100px] p-2 border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all duration-200";
     
     if (day.pnl > 0) {
-      return `${baseClass} bg-profit/10 text-profit`;
+      const intensity = Math.min(Math.abs(day.pnl) / 500, 1);
+      return cn(
+        baseClass,
+        "border-profit/30 hover:border-profit/50 hover:shadow-sm",
+        intensity > 0.5 ? "bg-profit/15" : "bg-profit/10",
+        "text-profit"
+      );
     } else if (day.pnl < 0) {
-      return `${baseClass} bg-loss/10 text-loss`;
+      const intensity = Math.min(Math.abs(day.pnl) / 500, 1);
+      return cn(
+        baseClass,
+        "border-loss/30 hover:border-loss/50 hover:shadow-sm",
+        intensity > 0.5 ? "bg-loss/15" : "bg-loss/10",
+        "text-loss"
+      );
     } else {
-      return `${baseClass} bg-secondary/20`;
+      return cn(baseClass, "bg-secondary/20 border-border hover:border-muted-foreground/30");
     }
   };
 
   const formatCurrency = (amount: number) => {
-    const formatted = amount.toFixed(2);
-    return amount >= 0 ? `$${formatted}` : `-$${Math.abs(Number(formatted))}`;
+    const formatted = Math.abs(amount).toFixed(2);
+    return amount >= 0 ? `$${formatted}` : `-$${formatted}`;
   };
+
   const formatPercentage = (p: number) =>
     `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
 
@@ -145,6 +185,14 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
   const isCurrentMonth =
     currentMonth === today.getMonth() && currentYear === today.getFullYear();
 
+  const isToday = (day: CalendarDay) => {
+    return (
+      day.date === today.getDate() &&
+      currentMonth === today.getMonth() &&
+      currentYear === today.getFullYear()
+    );
+  };
+
   const goPrev = () => {
     if (viewMode === "day") {
       if (currentMonth === 0) {
@@ -171,7 +219,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
     setViewMode("day");
   };
 
-  // ✅ Compute daily details for Popover
+  // ✨ Enhanced Popover Content
   const getDayTradesData = (dateStr: string) => {
     const tradesForDay = allTrades.filter((t) =>
       t.close_time.startsWith(dateStr)
@@ -184,6 +232,9 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
     const biggestLoss = Math.min(...losses.map((t) => t.profit), 0);
     const totalLots = tradesForDay.reduce((sum, t) => sum + t.volume, 0);
     const symbols = Array.from(new Set(tradesForDay.map((t) => t.symbol)));
+    const winRate = tradesForDay.length > 0 
+      ? ((wins.length / tradesForDay.length) * 100).toFixed(1) 
+      : '0';
 
     return {
       totalTrades: tradesForDay.length,
@@ -193,17 +244,19 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
       biggestLoss,
       totalLots,
       symbols,
+      winRate,
     };
   };
 
-  // ✅ Day View with Popover integration
+  // ✨ Enhanced Day View with better spacing and hover states
   const renderDayView = () => (
     <>
+      {/* Day Labels with better styling */}
       <div className="grid grid-cols-7 gap-2 mb-4">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div
             key={day}
-            className="text-center text-sm font-medium py-2 border-b-2 border-primary"
+            className="text-center text-sm font-medium py-2 border-b-2 border-primary text-muted-foreground"
           >
             {day}
           </div>
@@ -219,114 +272,147 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                   <div
                     className={cn(
                       getDayClass(day),
-                      "flex flex-col items-start rounded-lg px-2 py-1.5 cursor-pointer transition-colors"
+                      "flex flex-col items-start rounded-lg px-2 py-1.5",
+                      // Today indicator
+                      isToday(day) && "ring-2 ring-primary ring-offset-1"
                     )}
                   >
-                    <div className="text-sm font-medium">{day.date}</div>
-                    <div className="text-base font-semibold">
+                    {/* Date number with better weight */}
+                    <div className={cn(
+                      "text-sm font-semibold",
+                      isToday(day) && "text-primary"
+                    )}>
+                      {day.date}
+                    </div>
+                    
+                    {/* PnL with improved typography */}
+                    <div className="text-base font-medium mt-auto">
                       {formatCurrency(day.pnl)}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {day.trades} trades
+                    
+                    {/* Trade count with subtle styling */}
+                    <div className={cn(
+                      "text-xs",
+                      day.trades > 0 ? "text-muted-foreground" : "text-muted-foreground/50"
+                    )}>
+                      {day.trades > 0 ? `${day.trades} trade${day.trades > 1 ? 's' : ''}` : "—"}
                     </div>
-                    {day.percentage !== undefined && (
-                      <div className="text-xs font-medium mt-1 text-muted-foreground">
+                    
+                    {/* Percentage with conditional display */}
+                    {day.percentage !== undefined && day.trades > 0 && (
+                      <div className={cn(
+                        "text-xs font-medium mt-0.5",
+                        day.percentage >= 0 ? "text-profit/70" : "text-loss/70"
+                      )}>
                         {formatPercentage(day.percentage)}
                       </div>
                     )}
                   </div>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-[360px] p-5 rounded-2xl border bg-background shadow-sm transition-all animate-in fade-in-0 zoom-in-95">
+                {/* ✨ Enhanced Popover */}
+                <PopoverContent className="w-[340px] p-0 rounded-xl border bg-background shadow-lg">
                   {(() => {
                     const info = getDayTradesData(day.dateStr);
                     return info ? (
-                      <div className="space-y-4">
+                      <div className="space-y-0">
                         {/* Header */}
-                        <div className="flex flex-col space-y-0.5 pb-3 border-b">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Trade Summary
-                          </span>
-                          <span className="text-lg font-semibold text-foreground">
-                            {day.dateStr}
-                          </span>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Total Trades
-                            </span>
-                            <span className="font-medium">
-                              {info.totalTrades}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Winning Trades
-                            </span>
-                            <span className="text-profit font-medium">
-                              {info.winningTrades}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Losing Trades
-                            </span>
-                            <span className="text-loss font-medium">
-                              {info.losingTrades}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Biggest Win
-                            </span>
-                            <span className="text-profit font-medium">
-                              {formatCurrency(info.biggestWin)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Biggest Loss
-                            </span>
-                            <span className="text-loss font-medium">
-                              {formatCurrency(info.biggestLoss)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Total Lot Size
-                            </span>
-                            <span className="font-medium">
-                              {info.totalLots.toFixed(2)}
-                            </span>
+                        <div className="px-4 py-3 border-b bg-muted/30">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground">
+                                Trade Summary
+                              </span>
+                              <p className="text-base font-semibold text-foreground">
+                                {day.dateStr}
+                              </p>
+                            </div>
+                            <div className={cn(
+                              "text-xl font-medium",
+                              day.pnl >= 0 ? "text-profit" : "text-loss"
+                            )}>
+                              {formatCurrency(day.pnl)}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Symbols */}
-                        <div className="pt-3 border-t text-sm">
-                          <span className="font-medium text-foreground">
-                            Symbols:
-                          </span>{" "}
-                          {info.symbols.length > 0 ? (
-                            <span className="text-muted-foreground">
-                              {info.symbols.join(", ")}
-                            </span>
-                          ) : (
-                            <span className="italic text-muted-foreground opacity-70">
-                              None
-                            </span>
+                        {/* Stats Grid */}
+                        <div className="p-4 space-y-4">
+                          {/* Main Metrics Row */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+                              <BarChart3 className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                              <span className="text-lg font-bold">{info.totalTrades}</span>
+                              <p className="text-xs text-muted-foreground">Total</p>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-profit/10 text-center">
+                              <TrendingUp className="h-4 w-4 mx-auto mb-1 text-profit" />
+                              <span className="text-lg font-bold text-profit">{info.winningTrades}</span>
+                              <p className="text-xs text-muted-foreground">Wins</p>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-loss/10 text-center">
+                              <TrendingDown className="h-4 w-4 mx-auto mb-1 text-loss" />
+                              <span className="text-lg font-bold text-loss">{info.losingTrades}</span>
+                              <p className="text-xs text-muted-foreground">Losses</p>
+                            </div>
+                          </div>
+
+                          {/* Secondary Metrics */}
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                              <div className="flex items-center gap-2">
+                                <Target className="h-4 w-4 text-primary" />
+                                <span className="text-muted-foreground">Win Rate</span>
+                              </div>
+                              <span className="font-semibold text-primary">{info.winRate}%</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                              <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">Lots</span>
+                              </div>
+                              <span className="font-semibold">{info.totalLots.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          {/* Best/Worst with subtle separators */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2 rounded-lg bg-muted/30 border-l-2 border-profit">
+                              <p className="text-xs text-muted-foreground mb-0.5">Best Trade</p>
+                              <p className="text-sm font-bold text-profit">
+                                {formatCurrency(info.biggestWin)}
+                              </p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-muted/30 border-l-2 border-loss">
+                              <p className="text-xs text-muted-foreground mb-0.5">Worst Trade</p>
+                              <p className="text-sm font-bold text-loss">
+                                {formatCurrency(info.biggestLoss)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Symbols with better chips */}
+                          {info.symbols.length > 0 && (
+                            <div className="pt-3 border-t">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">
+                                Symbols Traded
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {info.symbols.map((symbol) => (
+                                  <span
+                                    key={symbol}
+                                    className="px-2 py-0.5 text-xs font-medium rounded-md bg-primary/10 text-primary border border-primary/20"
+                                  >
+                                    {symbol}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center text-sm text-muted-foreground py-4">
+                      <div className="text-center text-sm text-muted-foreground py-6 px-4">
                         No trades for this date
                       </div>
                     );
@@ -334,7 +420,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                 </PopoverContent>
               </Popover>
             ) : (
-              <div className="min-h-[100px] p-2 border border-border rounded-lg bg-gray-50 opacity-80"></div>
+              <div className="min-h-[100px] p-2 border border-border/50 rounded-lg bg-muted/10 opacity-60"></div>
             )}
           </div>
         ))}
@@ -342,44 +428,73 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
     </>
   );
 
+  // ✨ Enhanced Month View
   const renderMonthView = () => {
     const months = Array.from({ length: 12 }, (_, i) =>
       new Date(0, i).toLocaleString("default", { month: "short" })
     );
+    const currentMonthNow = new Date().getMonth();
+    const currentYearNow = new Date().getFullYear();
+
     return (
-      <div className="grid grid-cols-3 gap-4">
-        {months.map((m, idx) => (
-          <Button
-            key={m}
-            variant="outline"
-            onClick={() => {
-              setCurrentMonth(idx);
-              setViewMode("day");
-            }}
-          >
-            {m}
-          </Button>
-        ))}
+      <div className="grid grid-cols-3 gap-3">
+        {months.map((m, idx) => {
+          const isCurrent = idx === currentMonthNow && currentYear === currentYearNow;
+          const isFuture = currentYear > currentYearNow || (currentYear === currentYearNow && idx > currentMonthNow);
+          
+          return (
+            <Button
+              key={m}
+              variant="outline"
+              disabled={isFuture}
+              onClick={() => {
+                setCurrentMonth(idx);
+                setViewMode("day");
+              }}
+              className={cn(
+                "h-16 transition-all duration-200",
+                isCurrent && "border-primary bg-primary/10 text-primary",
+                isFuture && "opacity-40"
+              )}
+            >
+              <span className="text-base font-semibold">{m}</span>
+            </Button>
+          );
+        })}
       </div>
     );
   };
 
+  // ✨ Enhanced Year View
   const renderYearView = () => {
     const startYear = Math.floor(currentYear / 12) * 12;
+    const thisYear = new Date().getFullYear();
+
     return (
-      <div className="grid grid-cols-3 gap-4">
-        {Array.from({ length: 12 }, (_, i) => startYear + i).map((y) => (
-          <Button
-            key={y}
-            variant="outline"
-            onClick={() => {
-              setCurrentYear(y);
-              setViewMode("month");
-            }}
-          >
-            {y}
-          </Button>
-        ))}
+      <div className="grid grid-cols-3 gap-3">
+        {Array.from({ length: 12 }, (_, i) => startYear + i).map((y) => {
+          const isCurrent = y === thisYear;
+          const isFuture = y > thisYear;
+
+          return (
+            <Button
+              key={y}
+              variant="outline"
+              disabled={isFuture}
+              onClick={() => {
+                setCurrentYear(y);
+                setViewMode("month");
+              }}
+              className={cn(
+                "h-14 transition-all duration-200",
+                isCurrent && "border-primary bg-primary/10 text-primary",
+                isFuture && "opacity-40"
+              )}
+            >
+              <span className="text-base font-semibold">{y}</span>
+            </Button>
+          );
+        })}
       </div>
     );
   };
@@ -388,11 +503,22 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
         <div className="lg:col-span-4 space-y-4">
+          {/* ✨ Enhanced Header with better interactions */}
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={goPrev}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={goPrev}
+              className="hover:bg-muted transition-colors"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="secondary" size="sm" onClick={goToday}>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={goToday}
+              className="font-medium"
+            >
               Today
             </Button>
             <Button
@@ -400,12 +526,15 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
               size="sm"
               onClick={goNext}
               disabled={isCurrentMonth && viewMode === "day"}
+              className="hover:bg-muted transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+            
+            {/* Month/Year with hover underline */}
             <div className="ml-6 flex gap-2 text-lg font-semibold">
               <span
-                className="cursor-pointer"
+                className="cursor-pointer hover:text-primary hover:underline underline-offset-4 transition-colors"
                 onClick={() => setViewMode("month")}
               >
                 {new Date(currentYear, currentMonth).toLocaleString("default", {
@@ -413,7 +542,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
                 })}
               </span>
               <span
-                className="cursor-pointer"
+                className="cursor-pointer hover:text-primary hover:underline underline-offset-4 transition-colors"
                 onClick={() => setViewMode("year")}
               >
                 {currentYear}
@@ -428,6 +557,7 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
           </div>
         </div>
 
+        {/* Weekly Summary */}
         <WeeklySummaryWidget
           dailyPnL={dailyPnL}
           currentMonth={currentMonth}

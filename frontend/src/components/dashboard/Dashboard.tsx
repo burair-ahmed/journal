@@ -1,22 +1,18 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopHeader } from "@/components/layout/TopHeader";
-// import { TradezellaRightSidebar } from "./TradezellaRightSidebar";
-// import { MetricCard } from "./MetricCard";
+import toast from 'react-hot-toast';
 import { TradezellaProfitFactorCard } from "./TradezellaProfitFactorCard";
 import { TradezellaCalendar } from "./TradezellaCalendar";
 import { ChartsGrid } from "./ChartsGrid";
 import { AccountsManager } from "./AccountsManager";
-// import { AccountOverview } from "./AccountOverview";
 import { AccountProvider, useAccountContext } from "@/contexts/AccountContext";
 import { UIProvider, useUI } from "@/contexts/UIContext";
 import { TimeOfDayHeatmap } from "./widgets/TimeOfDayHeatmap";
 import { useParams, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTrades } from "@/hooks/useTrades";
 import { AccountBalanceWidget } from "./widgets/AccountBalanceWidget";
 import { TradeWinWidget } from "./widgets/TradeWinWidget";
-// import { ProfileForm } from "./ProfileForm";
-// import { LargestGainLossGauge } from "./widgets/LargestGainLossGauge";
 import { UserProfile } from "./UserProfile";
 import { TradesTable } from "./TradesTable";
 import { WinLossSymbolDistribution } from "./widgets/WinLossSymbolDistribution";
@@ -33,12 +29,47 @@ import { AdminDashboard } from "@/views/admin/AdminDashboard";
 import { UserDirectory } from "@/views/admin/UserDirectory";
 import { UserDetail } from "@/views/admin/UserDetail";
 
+// ✨ Dashboard Personalization imports
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { DraggableWidget } from './DraggableWidget';
+import { DashboardCustomizationBar } from './DashboardCustomizationBar';
+import {
+  useDashboardPreferences,
+  useUpdateDashboardLayout,
+  useToggleWidgetVisibility,
+  useUpdateWidgetSize,
+  useApplyPresetLayout,
+  useResetDashboardLayout,
+  DashboardWidget,
+  WidgetSize,
+} from '@/hooks/useDashboardPreferences';
+import { motion, AnimatePresence } from 'framer-motion';
+
 const DashboardContent = () => {
   const { selectedAccountId, accounts, isLoadingAccounts } = useAccountContext();
   const { activeView, setActiveView } = useUI();
   const { id } = useParams();
   const location = useLocation();
   const accountId = id ? Number(id) : undefined;
+
+  // ✨ Dashboard customization state
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null); // For drag overlay
+  const { data: preferences, isLoading: prefsLoading } = useDashboardPreferences();
+  const updateLayout = useUpdateDashboardLayout();
+  const toggleVisibility = useToggleWidgetVisibility();
+  const updateSize = useUpdateWidgetSize();
+  const applyPreset = useApplyPresetLayout();
+  const resetLayout = useResetDashboardLayout();
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Sync activeView with URL path
   useEffect(() => {
@@ -64,13 +95,77 @@ const DashboardContent = () => {
     );
   }
 
+  // ✨ Handle drag start (for overlay)
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
-  // if (trades.length === 0) {
-  //   return (
-  //     <div className="p-6 text-muted-foreground">
-  //       No trades found for this account.
-  //     </div>
-  //   );
+  // ✨ Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && preferences) {
+      const oldIndex = preferences.layout.findIndex((w) => w.id === active.id);
+      const newIndex = preferences.layout.findIndex((w) => w.id === over.id);
+
+      const newLayout = arrayMove(preferences.layout, oldIndex, newIndex).map((w, idx) => ({
+        ...w,
+        order: idx,
+      }));
+
+      updateLayout.mutate(newLayout);
+    }
+
+    setActiveId(null); // Clear overlay
+  };
+
+  // ✨ Handle widget visibility toggle
+  const handleToggleVisibility = (widgetId: string, visible: boolean) => {
+    toggleVisibility.mutate({ widgetId, visible });
+  };
+
+  // ✨ Handle widget size toggle
+  const handleToggleSize = (widgetId: string) => {
+    if (!preferences) return;
+    
+    const widget = preferences.layout.find(w => w.id === widgetId);
+    if (!widget) return;
+
+    const sizes: WidgetSize[] = ['compact', 'normal', 'expanded'];
+    const currentIndex = sizes.indexOf(widget.size);
+    const nextSize = sizes[(currentIndex + 1) % sizes.length];
+
+    updateSize.mutate({ widgetId, size: nextSize });
+  };
+
+  // ✨ Handle custom layout save
+  const handleSaveCustomLayout = (customLayout: any) => {
+    // For now, just log it - we can implement custom layout storage later
+    console.log('Custom layout saved:', customLayout);
+    toast.success(`Layout "${customLayout.name}" created! (Coming soon: save to presets)`);
+  };
+
+  // ✨ Widget map
+  const getWidgetComponent = (widgetId: string) => {
+    switch (widgetId) {
+      case 'account_balance':
+        return <AccountBalanceWidget accountId={selectedAccountId ?? undefined} />;
+      case 'profit_factor':
+        return <TradezellaProfitFactorCard accountId={selectedAccountId ?? undefined} />;
+      case 'trade_win':
+        return <TradeWinWidget accountId={selectedAccountId ?? undefined} />;
+      case 'symbol_distribution':
+        return <WinLossSymbolDistribution accountId={selectedAccountId ?? undefined} />;
+      case 'calendar':
+        return <TradezellaCalendar accountId={selectedAccountId ?? undefined} />;
+      case 'time_heatmap':
+        return <TimeOfDayHeatmap trades={trades} accountId={selectedAccountId ?? undefined} />;
+      case 'charts_grid':
+        return <ChartsGrid accountId={selectedAccountId ?? undefined} />;
+      default:
+        return null;
+    }
+  };
 
   const renderContent = () => {
     switch (activeView) {
@@ -103,110 +198,148 @@ const DashboardContent = () => {
         }
 
         // Show loading state
-        if (isLoadingAccounts) {
+        if (isLoadingAccounts || prefsLoading) {
           return (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center space-y-3">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                <p className="text-muted-foreground">Loading your accounts...</p>
+                <p className="text-muted-foreground">Loading your dashboard...</p>
               </div>
             </div>
           );
         }
+
+        // ✨ Customizable Dashboard
         return (
-          
-          <>
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              {/* <MetricCard title="Net P&L" value="$7,032.50" subtitle="Net P&L: $5" showInfo /> */}
-              <AccountBalanceWidget
-                accountId={selectedAccountId ?? undefined}
-              />
-              <TradezellaProfitFactorCard
-                accountId={selectedAccountId ?? undefined}
-              />
-              <TradeWinWidget accountId={selectedAccountId ?? undefined} />
-            </div>
-            {/* <LargestGainLossGauge accountId={selectedAccountId ?? undefined}/> */}
-            <WinLossSymbolDistribution accountId={selectedAccountId ?? undefined} />
-            <TradezellaCalendar accountId={selectedAccountId ?? undefined} />
-            <TimeOfDayHeatmap
-              trades={trades}
-              accountId={selectedAccountId ?? undefined}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Customization Toolbar */}
+            <DashboardCustomizationBar
+              isCustomizing={isCustomizing}
+              activePreset={preferences?.activePreset || 'default'}
+              onToggleCustomizing={() => setIsCustomizing(!isCustomizing)}
+              onApplyPreset={(preset) => applyPreset.mutate(preset)}
+              onReset={() => resetLayout.mutate()}
+              onSaveCustomLayout={handleSaveCustomLayout}
             />
-            <ChartsGrid accountId={selectedAccountId ?? undefined} />
-            {/* <UserProfile/> */}
-          </>
+
+            {/* Draggable Widget Grid */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={preferences?.layout.map(w => w.id) || []}
+                strategy={rectSortingStrategy}
+              >
+                <AnimatePresence mode="sync">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {preferences?.layout.map((widget: DashboardWidget) => (
+                      <DraggableWidget
+                        key={widget.id}
+                        id={widget.id}
+                        visible={widget.visible}
+                        size={widget.size}
+                        isCustomizing={isCustomizing}
+                        onToggleVisibility={handleToggleVisibility}
+                        onToggleSize={handleToggleSize}
+                      >
+                        {getWidgetComponent(widget.id)}
+                      </DraggableWidget>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              </SortableContext>
+
+              {/* ✨ Drag Overlay - follows cursor */}
+              <DragOverlay>
+                {activeId ? (
+                  <div className="opacity-80 cursor-grabbing shadow-2xl rounded-xl overflow-hidden border-2 border-primary">
+                    {getWidgetComponent(activeId)}
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </motion.div>
         );
 
       case "addAccount":
         return <AccountsManager />;
 
-      case "trades":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
+      case "trades":
+        if (!selectedAccountId) {
+          return (
+            <div className="text-center text-muted-foreground p-10">
+              No account selected — choose an account from the top bar.
+            </div>
+          );
+        }
         return <TradesTable accountId={selectedAccountId} />;
 
       case "profile":
         return <UserProfile />;
 
-        case "insights":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
+      case "insights":
+        if (!selectedAccountId) {
+          return (
+            <div className="text-center text-muted-foreground p-10">
+              No account selected — choose an account from the top bar.
+            </div>
+          );
+        }
         return <NewsFeed />;
-        
-        case "notebook":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
-        return <NotebookContainer />;
-        
-        case "reports":  if (!selectedAccountId) {
-    return (
-      <div className="text-center text-muted-foreground p-10">
-        No account selected — choose an account from the top bar.
-      </div>
-    );
-  }
-        return <ExportReport/>
 
-        case "tradeReplay":
+      case "notebook":
+        if (!selectedAccountId) {
+          return (
+            <div className="text-center text-muted-foreground p-10">
+              No account selected — choose an account from the top bar.
+            </div>
+          );
+        }
+        return <NotebookContainer />;
+
+      case "reports":
+        if (!selectedAccountId) {
+          return (
+            <div className="text-center text-muted-foreground p-10">
+              No account selected — choose an account from the top bar.
+            </div>
+          );
+        }
+        return <ExportReport />;
+
+      case "tradeReplay":
         return <TradeReplay />;
 
-        case "mentorMode":
+      case "mentorMode":
         return <MentorModeDashboard />;
-        
-        case "menteeView":
+
+      case "menteeView":
         return <MenteeDetailView />;
-        
-        // Admin views
-        case "adminDashboard":
+
+      case "adminDashboard":
         return <AdminDashboard />;
-        
-        case "adminUsers":
+
+      case "adminUsers":
         return <UserDirectory />;
-        
-        case "adminUserDetail":
+
+      case "adminUserDetail":
         return <UserDetail />;
-        
-        case "adminAnalytics":
+
+      case "adminAnalytics":
         return (
           <div className="text-center text-foreground mt-20">
             <h1 className="text-2xl font-semibold mb-2">Advanced Analytics</h1>
             <p className="text-muted-foreground">Coming soon</p>
           </div>
         );
-        
+
       default:
         return (
           <div className="text-center text-foreground mt-20">
@@ -226,7 +359,6 @@ const DashboardContent = () => {
         <TopHeader />
         <div className="flex flex-1">
           <div className="flex-1 p-6">{renderContent()}</div>
-          {/* <TradezellaRightSidebar /> */}
         </div>
       </div>
       <ImpersonationBanner />
