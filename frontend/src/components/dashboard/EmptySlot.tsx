@@ -35,39 +35,42 @@ export const EmptySlot = ({
 
   return (
     <>
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="h-full"
+      <Card
+        onClick={() => setIsPickerOpen(true)}
+        className={cn(
+          "h-full min-h-[150px] cursor-pointer",
+          "border-2 border-dashed",
+          "bg-gradient-to-br from-muted/30 to-muted/10",
+          "hover:from-primary/5 hover:to-primary/10",
+          "border-muted-foreground/20 hover:border-primary/40",
+          "transition-all duration-300 ease-out",
+          "flex items-center justify-center",
+          "group relative overflow-hidden"
+        )}
       >
-        <Card
-          onClick={() => setIsPickerOpen(true)}
-          className={cn(
-            "h-full min-h-[150px] cursor-pointer",
-            "border-2 border-dashed border-muted-foreground/30",
-            "hover:border-primary/50 hover:bg-primary/5",
-            "transition-all duration-200",
-            "flex items-center justify-center",
-            "group"
-          )}
-        >
-          <div className="text-center">
-            <motion.div
-              whileHover={{ rotate: 90 }}
-              transition={{ duration: 0.2 }}
-              className="mx-auto"
-            >
-              <Plus className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
-            </motion.div>
-            <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors mt-2">
-              Add Widget
-            </p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
-              {colSpan}×{rowSpan} slot
-            </p>
+        {/* Subtle gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+        {/* Content */}
+        <div className="relative text-center z-10">
+          <div className="relative inline-block">
+            {/* Outer ring animation */}
+            <div className="absolute inset-0 rounded-full bg-primary/10 scale-100 group-hover:scale-150 opacity-100 group-hover:opacity-0 transition-all duration-500" />
+            
+            {/* Plus icon */}
+            <div className="relative w-14 h-14 flex items-center justify-center rounded-full bg-muted group-hover:bg-primary/20 border-2 border-muted-foreground/30 group-hover:border-primary/50 transition-all duration-300">
+              <Plus className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-all duration-300 group-hover:scale-110" />
+            </div>
           </div>
-        </Card>
-      </motion.div>
+          
+          <p className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors duration-300 mt-3">
+            Add Widget
+          </p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            {colSpan}×{rowSpan}
+          </p>
+        </div>
+      </Card>
 
       {/* Widget Picker Dialog */}
       <WidgetPickerDialog

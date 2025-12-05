@@ -29,6 +29,7 @@ import {
 import { Plus, Grid3x3, Trash2, Save, Square, RectangleHorizontal, RectangleVertical, Maximize } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DashboardWidget, WidgetSize } from '@/hooks/useDashboardPreferences';
+import toast from 'react-hot-toast';
 
 interface LayoutSlot {
   id: string;
@@ -87,7 +88,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
   // Save layout (without widgets assigned)
   const handleSave = () => {
     if (!layoutName.trim()) {
-      alert('Please enter a layout name');
+      toast.error('Please enter a layout name');
       return;
     }
 

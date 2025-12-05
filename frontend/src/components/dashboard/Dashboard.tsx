@@ -248,23 +248,11 @@ const DashboardContent = () => {
             {/* ✨ Custom Layout View */}
             {activeCustomLayout ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">{activeCustomLayout.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Click + to add widgets to your layout
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setActiveCustomLayout(null);
-                      toast.success('Returned to standard layout');
-                    }}
-                  >
-                    Exit Custom Layout
-                  </Button>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold">{activeCustomLayout.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Click + to add widgets to your layout
+                  </p>
                 </div>
 
                 {/* Custom Layout Grid */}
