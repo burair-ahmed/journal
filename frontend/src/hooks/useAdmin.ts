@@ -419,6 +419,62 @@ export const useAnalyticsHistory = () => {
   });
 };
 
+// System Settings Interface
+export interface SystemSetting {
+  key: string;
+  value: any;
+  description?: string;
+  updated_at: string;
+}
+
+// Get all system settings
+export const useSystemSettings = () => {
+  return useQuery({
+    queryKey: ['admin-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .order('key');
+      
+      if (error) throw error;
+      return data as SystemSetting[];
+    },
+  });
+};
+
+// Update system setting
+export const useUpdateSystemSetting = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: any }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ 
+          value,
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        })
+        .eq('key', key);
+      
+      if (error) throw error;
+      
+      await logAdminAction('update_setting', undefined, { key, value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      toast.success('Setting updated');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update setting: ${error.message}`);
+    },
+  });
+};
+
 // Get recent activity for admin dashboard
 export const useRecentActivity = (limit = 10) => {
   return useQuery({

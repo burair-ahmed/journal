@@ -15,6 +15,7 @@ import { UserDetail } from "./views/admin/UserDetail";
 import { BlogList } from "./views/admin/BlogList";
 import { BlogEditor } from "./views/admin/BlogEditor";
 import { AdminAnalytics } from "./views/admin/AdminAnalytics";
+import { SystemSettings } from "./views/admin/SystemSettings";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +43,7 @@ const App = () => (
             <Route path="blog" element={<BlogList />} />
             <Route path="blog/new" element={<BlogEditor />} />
             <Route path="blog/edit/:postId" element={<BlogEditor />} />
-            <Route path="settings" element={<div className="p-6">Settings Placeholder</div>} />
+            <Route path="settings" element={<SystemSettings />} />
           </Route>
           
           {/* 404 - Must be last */}
