@@ -116,12 +116,19 @@ export function useDailyPnL(month: number, year: number, accountId?: number) {
     queryFn: async () => {
       if (!effectiveUserId) return { deposit: 0, stats: [] };
 
+      // Calculate start and end dates properly handling month/year boundaries
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 1); // Next month's first day
+      
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+
       let query = supabase
         .from("trades")
         .select("*, accounts!inner(user_id)")
         .eq("accounts.user_id", effectiveUserId)
-        .gte("close_time", `${year}-${String(month + 1).padStart(2, "0")}-01`)
-        .lt("close_time", `${year}-${String(month + 2).padStart(2, "0")}-01`)
+        .gte("close_time", startStr)
+        .lt("close_time", endStr)
         .order("close_time", { ascending: true });
 
       if (accountId) query = query.eq("account_id", accountId);
@@ -159,8 +166,10 @@ export function useDailyPnL(month: number, year: number, accountId?: number) {
         const date = t.close_time.split("T")[0];
         if (!daily[date]) daily[date] = { pnl: 0, trades: 0 };
 
+        // Calculate net P&L: profit + commission + swap
+        // (commission and swap are already signed - negative means cost)
         const netPnL =
-          Number(t.profit ?? 0) + Number(t.commission ?? 0) - Number(t.swap ?? 0);
+          Number(t.profit ?? 0) + Number(t.commission ?? 0) + Number(t.swap ?? 0);
 
         daily[date].pnl += netPnL;
         daily[date].trades += 1;

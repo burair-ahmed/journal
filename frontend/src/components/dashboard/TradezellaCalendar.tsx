@@ -102,12 +102,16 @@ export const TradezellaCalendar: React.FC<{ accountId?: number }> = ({
   const deposit = data?.deposit ?? 10000;
 
   const getDayClass = (day: CalendarDay) => {
-    let baseClass =
+    const baseClass =
       "min-h-[100px] p-2 border border-border rounded-lg flex flex-col items-center justify-center text-xs cursor-pointer transition-all hover:shadow-sm";
-    if (day.pnl > 0) baseClass += " bg-profit/10 text-profit";
-    else if (day.pnl < 0) baseClass += " bg-loss/10 text-loss";
-    else baseClass += " bg-secondary/20";
-    return baseClass;
+    
+    if (day.pnl > 0) {
+      return `${baseClass} bg-profit/10 text-profit`;
+    } else if (day.pnl < 0) {
+      return `${baseClass} bg-loss/10 text-loss`;
+    } else {
+      return `${baseClass} bg-secondary/20`;
+    }
   };
 
   const formatCurrency = (amount: number) => {
