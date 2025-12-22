@@ -140,13 +140,28 @@ export const useUpdatePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<BlogFormData> }) => {
+    mutationFn: async ({ id, data, reason }: { id: string; data: Partial<BlogFormData>; reason?: string }) => {
+      const { data: before } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
       const { error } = await supabase
         .from('blog_posts')
-        .update(data)
+        .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('admin_audit_log').insert({
+          admin_user_id: user.id,
+          action: 'update_blog_post',
+          metadata: { post_id: id, before, after: data, reason },
+        });
+      }
     },
     onSuccess: (_, { id }) => {
       toast.success('Blog post updated successfully');
@@ -178,6 +193,97 @@ export const useDeletePost = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete blog post');
+    },
+  });
+};
+
+// Revert blog post to previous version based on audit log
+export const useRevertPost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { data: entries, error: fetchError } = await supabase
+        .from('admin_audit_log')
+        .select('*')
+        .eq('action', 'update_blog_post')
+        .contains('metadata', { post_id: id })
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (fetchError) throw fetchError;
+      const entry = entries?.[0];
+      const before = entry?.metadata?.before;
+      if (!before) throw new Error('No previous version found');
+      
+      const { error } = await supabase
+        .from('blog_posts')
+        .update({
+          title: before.title,
+          slug: before.slug,
+          excerpt: before.excerpt,
+          content: before.content,
+          featured_image: before.featured_image,
+          categories: before.categories,
+          tags: before.tags,
+          seo_title: before.seo_title,
+          seo_description: before.seo_description,
+          seo_keywords: before.seo_keywords,
+          status: before.status,
+          published_at: before.published_at || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('admin_audit_log').insert({
+          admin_user_id: user.id,
+          action: 'revert_blog_post',
+          metadata: { post_id: id, reverted_to: before, reason },
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success('Blog post reverted');
+      queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to revert blog post');
+    },
+  });
+};
+
+// Unpublish blog post
+export const useUnpublishPost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { error } = await supabase
+        .from('blog_posts')
+        .update({ status: 'draft', published_at: null, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('admin_audit_log').insert({
+          admin_user_id: user.id,
+          action: 'unpublish_blog_post',
+          metadata: { post_id: id, reason },
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success('Blog post unpublished');
+      queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to unpublish blog post');
     },
   });
 };

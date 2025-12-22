@@ -154,7 +154,7 @@ export const LayoutBuilder = ({ availableWidgets, onSaveLayout }: LayoutBuilderP
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Grid3x3 className="h-4 w-4" />
-          Create Custom Layout
+          Layout
         </Button>
       </DialogTrigger>
 

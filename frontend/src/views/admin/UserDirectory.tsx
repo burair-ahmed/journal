@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { useUsers, useSuspendUser, useBulkSuspendUsers, useBulkDeleteUsers, AdminUser } from '@/hooks/useAdmin';
+import { useUsers, useSuspendUser, useBulkSuspendUsers, useBulkDeleteUsers, useBulkUnsuspendUsers, AdminUser, useHasRole } from '@/hooks/useAdmin';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -48,14 +48,17 @@ export const UserDirectory = () => {
   
   const suspendUser = useSuspendUser();
   const bulkSuspend = useBulkSuspendUsers();
+  const bulkUnsuspend = useBulkUnsuspendUsers();
   const bulkDelete = useBulkDeleteUsers();
+  const isSuperAdmin = useHasRole(['super_admin']);
 
   const handleSuspend = async (userId: string, email: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to suspend ${email}?`)) return;
+    const reason = window.prompt(`Enter reason to suspend ${email}`);
+    if (!reason) return;
     
     try {
-      await suspendUser.mutateAsync(userId);
+      await suspendUser.mutateAsync({ userId, reason });
       toast.success('User suspended');
       refetch();
     } catch (error) {
@@ -63,9 +66,9 @@ export const UserDirectory = () => {
     }
   };
 
-  const handleBulkSuspend = async () => {
+  const handleBulkSuspend = async (reason: string) => {
     try {
-      await bulkSuspend.mutateAsync(selectedUsers);
+      await bulkSuspend.mutateAsync({ userIds: selectedUsers, reason });
       setSelectedUsers([]);
       refetch();
     } catch (error) {
@@ -73,9 +76,19 @@ export const UserDirectory = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = async (reason: string) => {
     try {
-      await bulkDelete.mutateAsync(selectedUsers);
+      await bulkDelete.mutateAsync({ userIds: selectedUsers, reason });
+      setSelectedUsers([]);
+      refetch();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleBulkUnsuspend = async (reason: string) => {
+    try {
+      await bulkUnsuspend.mutateAsync({ userIds: selectedUsers, reason });
       setSelectedUsers([]);
       refetch();
     } catch (error) {
@@ -148,10 +161,12 @@ export const UserDirectory = () => {
         selectedCount={selectedUsers.length}
         onClearSelection={() => setSelectedUsers([])}
         onSuspend={handleBulkSuspend}
+        onUnsuspend={handleBulkUnsuspend}
         onDelete={handleBulkDelete}
         onExport={handleExport}
         isSuspending={bulkSuspend.isPending}
         isDeleting={bulkDelete.isPending}
+        canDelete={isSuperAdmin}
       />
 
       {/* Header */}
@@ -222,14 +237,20 @@ export const UserDirectory = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : data?.users.length === 0 ? (
+            ) : !data || !Array.isArray(data.users) ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No users found
+                </TableCell>
+              </TableRow>
+            ) : data.users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
-              data?.users.map((user: AdminUser) => (
+              data.users.map((user: AdminUser) => (
                 <TableRow 
                   key={user.id} 
                   className={`cursor-pointer transition-colors ${selectedUsers.includes(user.id) ? 'bg-primary/5' : 'hover:bg-muted/50'}`}

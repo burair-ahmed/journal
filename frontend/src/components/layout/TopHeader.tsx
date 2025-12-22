@@ -15,6 +15,7 @@ import { syncTrades, syncOHLC } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import { NotificationsPopover } from "./NotificationsPopover";
+import { LayoutBuilder } from "@/components/dashboard/LayoutBuilder";
 
 export const TopHeader = () => {
   const {
@@ -167,6 +168,23 @@ const handleSync = async () => {
             <Repeat className="h-4 w-4 mr-2" />
             {syncing ? "Syncing..." : "Sync Trades"}
           </Button>
+
+          {/* Layout Builder */}
+          <LayoutBuilder
+            availableWidgets={[
+              { id: 'account_balance', name: 'Account Balance' },
+              { id: 'profit_factor', name: 'Profit Factor' },
+              { id: 'trade_win', name: 'Win Rate' },
+              { id: 'symbol_distribution', name: 'Symbol Distribution' },
+              { id: 'calendar', name: 'Trading Calendar' },
+              { id: 'time_heatmap', name: 'Time Heatmap' },
+              { id: 'charts_grid', name: 'Performance Charts' },
+            ]}
+            onSaveLayout={(layout) => {
+              // Pass to Dashboard via event or context
+              window.dispatchEvent(new CustomEvent('customLayoutCreated', { detail: layout }));
+            }}
+          />
 
           {/* Notifications */}
           <NotificationsPopover />

@@ -30,22 +30,10 @@ import { UserDirectory } from "@/views/admin/UserDirectory";
 import { UserDetail } from "@/views/admin/UserDetail";
 
 // ✨ Dashboard Personalization imports
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
-import { DraggableWidget } from './DraggableWidget';
-import { DashboardCustomizationBar } from './DashboardCustomizationBar';
 import { EmptySlot } from './EmptySlot';
-import {
-  useDashboardPreferences,
-  useUpdateDashboardLayout,
-  useToggleWidgetVisibility,
-  useUpdateWidgetSize,
-  useApplyPresetLayout,
-  useResetDashboardLayout,
-  DashboardWidget,
-  WidgetSize,
-} from '@/hooks/useDashboardPreferences';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useDashboardPreferences, DashboardWidget } from '@/hooks/useDashboardPreferences';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const DashboardContent = () => {
   const { selectedAccountId, accounts, isLoadingAccounts } = useAccountContext();
@@ -54,24 +42,10 @@ const DashboardContent = () => {
   const location = useLocation();
   const accountId = id ? Number(id) : undefined;
 
-  // ✨ Dashboard customization state
-  const [isCustomizing, setIsCustomizing] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null); // For drag overlay
-  const [activeCustomLayout, setActiveCustomLayout] = useState<any | null>(null); // Custom layout
+  // ✨ Dashboard state
+  const [activeCustomLayout, setActiveCustomLayout] = useState<any | null>(null);
+  const [isEditingLayout, setIsEditingLayout] = useState(false);
   const { data: preferences, isLoading: prefsLoading } = useDashboardPreferences();
-  const updateLayout = useUpdateDashboardLayout();
-  const toggleVisibility = useToggleWidgetVisibility();
-  const updateSize = useUpdateWidgetSize();
-  const applyPreset = useApplyPresetLayout();
-  const resetLayout = useResetDashboardLayout();
-
-  // Drag and drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Sync activeView with URL path
   useEffect(() => {
@@ -82,7 +56,14 @@ const DashboardContent = () => {
     }
   }, [location.pathname, setActiveView]);
 
-  // Fetch trades for this account
+  // Listen for custom layout creation from TopHeader
+  useEffect(() => {
+    const handleLayoutCreated = (event: any) => {
+      handleSaveCustomLayout(event.detail);
+    };
+    window.addEventListener('customLayoutCreated', handleLayoutCreated);
+    return () => window.removeEventListener('customLayoutCreated', handleLayoutCreated);
+  }, []);
   const { data: trades = [], isLoading, error } = useTrades(accountId);
 
   if (isLoading) {
@@ -97,55 +78,12 @@ const DashboardContent = () => {
     );
   }
 
-  // ✨ Handle drag start (for overlay)
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  // ✨ Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id && preferences) {
-      const oldIndex = preferences.layout.findIndex((w) => w.id === active.id);
-      const newIndex = preferences.layout.findIndex((w) => w.id === over.id);
-
-      const newLayout = arrayMove(preferences.layout, oldIndex, newIndex).map((w, idx) => ({
-        ...w,
-        order: idx,
-      }));
-
-      updateLayout.mutate(newLayout);
-    }
-
-    setActiveId(null); // Clear overlay
-  };
-
-  // ✨ Handle widget visibility toggle
-  const handleToggleVisibility = (widgetId: string, visible: boolean) => {
-    toggleVisibility.mutate({ widgetId, visible });
-  };
-
-  // ✨ Handle widget size toggle
-  const handleToggleSize = (widgetId: string) => {
-    if (!preferences) return;
-    
-    const widget = preferences.layout.find(w => w.id === widgetId);
-    if (!widget) return;
-
-    const sizes: WidgetSize[] = ['compact', 'normal', 'expanded'];
-    const currentIndex = sizes.indexOf(widget.size);
-    const nextSize = sizes[(currentIndex + 1) % sizes.length];
-
-    updateSize.mutate({ widgetId, size: nextSize });
-  };
-
   // ✨ Handle custom layout save
   const handleSaveCustomLayout = (customLayout: any) => {
     console.log('Custom layout saved:', customLayout);
-    // Store in local state for now
     setActiveCustomLayout(customLayout);
-    toast.success(`Layout "${customLayout.name}" created! Assign widgets by clicking the + icons.`);
+    setIsEditingLayout(true); // Enable edit mode
+    toast.success(`Layout "${customLayout.name}" created! Add widgets now.`);
   };
 
   // ✨ Handle widget assignment to empty slot
@@ -235,25 +173,18 @@ const DashboardContent = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Customization Toolbar */}
-            <DashboardCustomizationBar
-              isCustomizing={isCustomizing}
-              activePreset={preferences?.activePreset || 'default'}
-              onToggleCustomizing={() => setIsCustomizing(!isCustomizing)}
-              onApplyPreset={(preset) => applyPreset.mutate(preset)}
-              onReset={() => resetLayout.mutate()}
-              onSaveCustomLayout={handleSaveCustomLayout}
-            />
-
             {/* ✨ Custom Layout View */}
             {activeCustomLayout ? (
               <div className="space-y-4">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">{activeCustomLayout.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Click + to add widgets to your layout
-                  </p>
-                </div>
+                {/* Show header only in edit mode */}
+                {isEditingLayout && (
+                  <div className="mb-4 p-4 bg-muted/30 rounded-lg border">
+                    <h3 className="text-lg font-semibold">{activeCustomLayout.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Click + to add widgets to your layout
+                    </p>
+                  </div>
+                )}
 
                 {/* Custom Layout Grid */}
                 <div
@@ -278,71 +209,68 @@ const DashboardContent = () => {
                           {getWidgetComponent(slot.widgetId)}
                         </div>
                       ) : (
-                        // Render empty slot with + icon
-                        <EmptySlot
-                          slotId={slot.id}
-                          colSpan={slot.colSpan}
-                          rowSpan={slot.rowSpan}
-                          onSelectWidget={handleAssignWidget}
-                          renderWidget={getWidgetComponent}
-                          availableWidgets={[
-                            { id: 'account_balance', name: 'Account Balance' },
-                            { id: 'profit_factor', name: 'Profit Factor' },
-                            { id: 'trade_win', name: 'Win Rate' },
-                            { id: 'symbol_distribution', name: 'Symbol Distribution' },
-                            { id: 'calendar', name: 'Trading Calendar' },
-                            { id: 'time_heatmap', name: 'Time Heatmap' },
-                            { id: 'charts_grid', name: 'Performance Charts' },
-                          ]}
-                        />
+                        // Render empty slot with + icon (only in edit mode)
+                        isEditingLayout && (
+                          <EmptySlot
+                            slotId={slot.id}
+                            colSpan={slot.colSpan}
+                            rowSpan={slot.rowSpan}
+                            onSelectWidget={handleAssignWidget}
+                            renderWidget={getWidgetComponent}
+                            availableWidgets={[
+                              { id: 'account_balance', name: 'Account Balance' },
+                              { id: 'profit_factor', name: 'Profit Factor' },
+                              { id: 'trade_win', name: 'Win Rate' },
+                              { id: 'symbol_distribution', name: 'Symbol Distribution' },
+                              { id: 'calendar', name: 'Trading Calendar' },
+                              { id: 'time_heatmap', name: 'Time Heatmap' },
+                              { id: 'charts_grid', name: 'Performance Charts' },
+                            ]}
+                          />
+                        )
                       )}
                     </div>
                   ))}
                 </div>
+
+                {/* Save Button - Show only in edit mode */}
+                {isEditingLayout && (
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={() => {
+                        setIsEditingLayout(false);
+                        toast.success('Layout saved!');
+                      }}
+                      size="lg"
+                      className="bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700"
+                    >
+                      Save Layout
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
-                {/* Standard Draggable Widget Grid */}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={preferences?.layout.map(w => w.id) || []}
-                strategy={rectSortingStrategy}
-              >
-                <AnimatePresence mode="sync">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {preferences?.layout.map((widget: DashboardWidget) => (
-                      <DraggableWidget
+                {/* Standard Widget Grid */}
+                {/* Standard Widget Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {preferences?.layout
+                    .filter((widget: DashboardWidget) => widget.visible)
+                    .map((widget: DashboardWidget) => (
+                      <div
                         key={widget.id}
-                        id={widget.id}
-                        visible={widget.visible}
-                        size={widget.size}
-                        isCustomizing={isCustomizing}
-                        onToggleVisibility={handleToggleVisibility}
-                        onToggleSize={handleToggleSize}
+                        className={cn(
+                          widget.size === 'compact' && 'col-span-1',
+                          widget.size === 'normal' && 'col-span-1 md:col-span-2 lg:col-span-1',
+                          widget.size === 'expanded' && 'col-span-full'
+                        )}
                       >
                         {getWidgetComponent(widget.id)}
-                      </DraggableWidget>
+                      </div>
                     ))}
-                  </div>
-                </AnimatePresence>
-              </SortableContext>
-
-              {/* ✨ Drag Overlay - follows cursor */}
-              <DragOverlay>
-                {activeId ? (
-                  <div className="opacity-80 cursor-grabbing shadow-2xl rounded-xl overflow-hidden border-2 border-primary">
-                    {getWidgetComponent(activeId)}
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-            </>
-          )}
+                </div>
+              </>
+            )}
           </motion.div>
         );
 

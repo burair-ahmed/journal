@@ -1,7 +1,7 @@
 // views/admin/BlogList.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBlogPosts, useDeletePost } from '@/hooks/useBlog';
+import { useBlogPosts, useDeletePost, useRevertPost, useUnpublishPost } from '@/hooks/useBlog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export const BlogList = () => {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ export const BlogList = () => {
   const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
   const { data, isLoading, refetch } = useBlogPosts(page, 10, filterStatus);
   const deletePost = useDeletePost();
+  const revertPost = useRevertPost();
+  const unpublishPost = useUnpublishPost();
   
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -225,7 +228,37 @@ export const BlogList = () => {
                           <Eye className="mr-2 h-4 w-4" />
                           Preview
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const reason = window.prompt('Enter reason to unpublish');
+                            if (!reason) return;
+                            try {
+                              await unpublishPost.mutateAsync({ id: post.id, reason });
+                              refetch();
+                            } catch (e) {
+                              toast.error('Failed to unpublish');
+                            }
+                          }}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Unpublish
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const reason = window.prompt('Enter reason to revert to previous version');
+                            if (!reason) return;
+                            try {
+                              await revertPost.mutateAsync({ id: post.id, reason });
+                              refetch();
+                            } catch (e) {
+                              toast.error('Failed to revert');
+                            }
+                          }}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Revert
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive focus:text-destructive"
                           onClick={() => setDeleteId(post.id)}

@@ -26,6 +26,7 @@ const adminMenuItems = [
   { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
   { icon: FileText, label: 'Blog', path: '/admin/blog' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
+  { icon: Shield, label: 'Audit Log', path: '/admin/audit' },
 ];
 
 export const AdminLayout = () => {

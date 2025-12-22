@@ -4,7 +4,7 @@
  * Manage global platform settings like maintenance mode, registration, etc.
  */
 
-import { useSystemSettings, useUpdateSystemSetting } from '@/hooks/useAdmin';
+import { useSystemSettings, useUpdateSystemSetting, useHasRole, useRevertSystemSetting } from '@/hooks/useAdmin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -17,7 +17,10 @@ import { toast } from 'sonner';
 export const SystemSettings = () => {
   const { data: settings, isLoading } = useSystemSettings();
   const updateSetting = useUpdateSystemSetting();
+  const revertSetting = useRevertSystemSetting();
   const [localSettings, setLocalSettings] = useState<Record<string, any>>({});
+  const [changeReason, setChangeReason] = useState('');
+  const isSuperAdmin = useHasRole(['super_admin']);
 
   // Sync local state with fetched data
   useEffect(() => {
@@ -32,7 +35,15 @@ export const SystemSettings = () => {
 
   const handleToggle = (key: string, checked: boolean) => {
     setLocalSettings(prev => ({ ...prev, [key]: checked }));
-    updateSetting.mutate({ key, value: checked });
+    if (!isSuperAdmin) {
+      toast.error('Super admin required');
+      return;
+    }
+    if (!changeReason) {
+      toast.error('Reason is required');
+      return;
+    }
+    updateSetting.mutate({ key, value: checked, reason: changeReason });
   };
 
   const handleInputChange = (key: string, value: string) => {
@@ -40,7 +51,27 @@ export const SystemSettings = () => {
   };
 
   const handleSaveInput = (key: string) => {
-    updateSetting.mutate({ key, value: localSettings[key] });
+    if (!isSuperAdmin) {
+      toast.error('Super admin required');
+      return;
+    }
+    if (!changeReason) {
+      toast.error('Reason is required');
+      return;
+    }
+    updateSetting.mutate({ key, value: localSettings[key], reason: changeReason });
+  };
+  
+  const handleRevert = (key: string) => {
+    if (!isSuperAdmin) {
+      toast.error('Super admin required');
+      return;
+    }
+    if (!changeReason) {
+      toast.error('Reason is required');
+      return;
+    }
+    revertSetting.mutate({ key, reason: changeReason });
   };
 
   if (isLoading) {
@@ -61,6 +92,17 @@ export const SystemSettings = () => {
         <p className="text-muted-foreground mt-1">
           Manage global platform configuration and feature flags
         </p>
+        <div className="mt-4 max-w-md">
+          <Label htmlFor="change_reason">Change reason</Label>
+          <Input
+            id="change_reason"
+            placeholder="Enter reason for settings changes"
+            value={changeReason}
+            onChange={(e) => setChangeReason(e.target.value)}
+            className="mt-1"
+            disabled={!isSuperAdmin}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -92,6 +134,14 @@ export const SystemSettings = () => {
                 >
                   <Save className="h-4 w-4" />
                 </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => handleRevert('platform_name')}
+                  disabled={revertSetting.isPending}
+                >
+                  Revert
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 Displayed in emails and browser title
@@ -114,6 +164,14 @@ export const SystemSettings = () => {
                 >
                   <Save className="h-4 w-4" />
                 </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => handleRevert('support_email')}
+                  disabled={revertSetting.isPending}
+                >
+                  Revert
+                </Button>
               </div>
             </div>
 
@@ -133,6 +191,14 @@ export const SystemSettings = () => {
                   disabled={updateSetting.isPending}
                 >
                   <Save className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => handleRevert('max_upload_size_mb')}
+                  disabled={revertSetting.isPending}
+                >
+                  Revert
                 </Button>
               </div>
             </div>
@@ -161,8 +227,16 @@ export const SystemSettings = () => {
               <Switch 
                 checked={localSettings['maintenance_mode'] === true}
                 onCheckedChange={(checked) => handleToggle('maintenance_mode', checked)}
-                disabled={updateSetting.isPending}
+                disabled={!isSuperAdmin || updateSetting.isPending || !changeReason}
               />
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => handleRevert('maintenance_mode')}
+                disabled={revertSetting.isPending}
+              >
+                Revert
+              </Button>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
@@ -175,8 +249,16 @@ export const SystemSettings = () => {
               <Switch 
                 checked={localSettings['allow_registration'] === true}
                 onCheckedChange={(checked) => handleToggle('allow_registration', checked)}
-                disabled={updateSetting.isPending}
+                disabled={!isSuperAdmin || updateSetting.isPending || !changeReason}
               />
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => handleRevert('allow_registration')}
+                disabled={revertSetting.isPending}
+              >
+                Revert
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -18,27 +18,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
 
 interface BulkActionsToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
-  onSuspend: () => void;
-  onDelete: () => void;
+  onSuspend: (reason: string) => void;
+  onUnsuspend?: (reason: string) => void;
+  onDelete: (reason: string) => void;
   onExport: () => void;
   isSuspending?: boolean;
   isDeleting?: boolean;
+  canDelete?: boolean;
 }
 
 export const BulkActionsToolbar = ({
   selectedCount,
   onClearSelection,
   onSuspend,
+  onUnsuspend,
   onDelete,
   onExport,
   isSuspending,
   isDeleting,
+  canDelete = true,
 }: BulkActionsToolbarProps) => {
-  const [actionType, setActionType] = useState<'suspend' | 'delete' | null>(null);
+  const [actionType, setActionType] = useState<'suspend' | 'unsuspend' | 'delete' | null>(null);
+  const [reason, setReason] = useState('');
 
   if (selectedCount === 0) return null;
 
@@ -85,13 +91,19 @@ export const BulkActionsToolbar = ({
                   <Ban className="h-4 w-4 mr-2 text-orange-500" />
                   Suspend Selected
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setActionType('delete')}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected
+                <DropdownMenuItem onClick={() => setActionType('unsuspend')}>
+                  <CheckSquare className="h-4 w-4 mr-2 text-green-600" />
+                  Unsuspend Selected
                 </DropdownMenuItem>
+                {canDelete && (
+                  <DropdownMenuItem 
+                    onClick={() => setActionType('delete')}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -103,7 +115,7 @@ export const BulkActionsToolbar = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {actionType === 'suspend' ? 'Suspend Users?' : 'Delete Users?'}
+              {actionType === 'suspend' ? 'Suspend Users?' : actionType === 'unsuspend' ? 'Unsuspend Users?' : 'Delete Users?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               You are about to {actionType} <strong>{selectedCount} users</strong>.
@@ -112,20 +124,29 @@ export const BulkActionsToolbar = ({
                 : ' They will lose access to the platform until unsuspended.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter reason"
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (actionType === 'suspend') onSuspend();
-                if (actionType === 'delete') onDelete();
+                if (actionType === 'suspend') onSuspend(reason);
+                if (actionType === 'unsuspend' && onUnsuspend) onUnsuspend(reason);
+                if (actionType === 'delete') onDelete(reason);
                 setActionType(null);
+                setReason('');
               }}
               className={actionType === 'delete' ? 'bg-destructive hover:bg-destructive/90' : 'bg-orange-500 hover:bg-orange-600'}
+              disabled={(!reason) || isSuspending || isDeleting}
             >
               {(isSuspending || isDeleting) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                `Confirm ${actionType === 'suspend' ? 'Suspend' : 'Delete'}`
+                `Confirm ${actionType === 'suspend' ? 'Suspend' : actionType === 'unsuspend' ? 'Unsuspend' : 'Delete'}`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

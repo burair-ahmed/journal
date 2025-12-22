@@ -5,13 +5,13 @@
  */
 
 import { Card } from '@/components/ui/card';
-import { useAnalyticsOverview, useRecentActivity, formatActivityAction } from '@/hooks/useAdmin';
+import { useAnalyticsOverview, useRecentActivityUnified, formatActivityAction } from '@/hooks/useAdmin';
 import { Users, Activity, TrendingUp, BarChart3, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export const AdminDashboard = () => {
   const { data: analytics, isLoading: analyticsLoading } = useAnalyticsOverview();
-  const { data: recentActivity, isLoading: activityLoading, refetch: refetchActivity } = useRecentActivity(5);
+  const { data: recentActivity, isLoading: activityLoading, refetch: refetchActivity } = useRecentActivityUnified(5);
 
   if (analyticsLoading) {
     return (

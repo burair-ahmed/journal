@@ -16,6 +16,7 @@ import { BlogList } from "./views/admin/BlogList";
 import { BlogEditor } from "./views/admin/BlogEditor";
 import { AdminAnalytics } from "./views/admin/AdminAnalytics";
 import { SystemSettings } from "./views/admin/SystemSettings";
+import { AuditLog } from "./views/admin/AuditLog";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="blog/new" element={<BlogEditor />} />
             <Route path="blog/edit/:postId" element={<BlogEditor />} />
             <Route path="settings" element={<SystemSettings />} />
+            <Route path="audit" element={<AuditLog />} />
           </Route>
           
           {/* 404 - Must be last */}

@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUserDetail, useSuspendUser, useUnsuspendUser, useDeleteUser } from '@/hooks/useAdmin';
+import { useUserDetail, useSuspendUser, useUnsuspendUser, useDeleteUser, useHasRole, useRestoreUser } from '@/hooks/useAdmin';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,19 +50,30 @@ export const UserDetail = () => {
   const suspendUser = useSuspendUser();
   const unsuspendUser = useUnsuspendUser();
   const deleteUser = useDeleteUser();
+  const restoreUser = useRestoreUser();
+  const isSuperAdmin = useHasRole(['super_admin']);
   
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [unsuspendDialogOpen, setUnsuspendDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [suspendReason, setSuspendReason] = useState('');
+  const [unsuspendReason, setUnsuspendReason] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [restoreReason, setRestoreReason] = useState('');
 
   const handleSuspend = async () => {
     if (!userId || !data) return;
 
     try {
-      await suspendUser.mutateAsync(userId);
+      if (!suspendReason) {
+        toast.error('Reason is required');
+        return;
+      }
+      await suspendUser.mutateAsync({ userId, reason: suspendReason });
       toast.success(`${data.user.email} has been suspended`);
       setSuspendDialogOpen(false);
+      setSuspendReason('');
       refetch();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to suspend user');
@@ -73,9 +84,14 @@ export const UserDetail = () => {
     if (!userId || !data) return;
 
     try {
-      await unsuspendUser.mutateAsync(userId);
+      if (!unsuspendReason) {
+        toast.error('Reason is required');
+        return;
+      }
+      await unsuspendUser.mutateAsync({ userId, reason: unsuspendReason });
       toast.success(`${data.user.email} has been unsuspended`);
       setUnsuspendDialogOpen(false);
+      setUnsuspendReason('');
       refetch();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to unsuspend user');
@@ -90,14 +106,35 @@ export const UserDetail = () => {
       toast.error('Confirmation text does not match');
       return;
     }
+    if (!deleteReason) {
+      toast.error('Reason is required');
+      return;
+    }
 
     try {
-      await deleteUser.mutateAsync(userId);
+      await deleteUser.mutateAsync({ userId, reason: deleteReason });
       toast.success(`${data.user.email} has been deleted`);
       setDeleteDialogOpen(false);
+      setDeleteReason('');
       navigate('/admin/users');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete user');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!userId || !data) return;
+    if (!restoreReason) {
+      toast.error('Reason is required');
+      return;
+    }
+    try {
+      await restoreUser.mutateAsync({ userId, reason: restoreReason });
+      toast.success(`${data.user.email} has been restored`);
+      setRestoreReason('');
+      refetch();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to restore user');
     }
   };
 
@@ -130,6 +167,7 @@ export const UserDetail = () => {
 
   const { user, accounts, trade_count } = data;
   const isSuspended = user.role === 'suspended';
+  const isDeleted = !!user.deleted_at;
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
@@ -159,12 +197,18 @@ export const UserDetail = () => {
               This will prevent them from accessing the platform.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Input
+            value={suspendReason}
+            onChange={(e) => setSuspendReason(e.target.value)}
+            placeholder="Enter reason"
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSuspend}
               className="bg-orange-500 hover:bg-orange-600"
-              disabled={suspendUser.isPending}
+              disabled={suspendUser.isPending || !suspendReason}
             >
               {suspendUser.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Suspending...</>
@@ -187,12 +231,18 @@ export const UserDetail = () => {
               They will be able to access the platform again.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Input
+            value={unsuspendReason}
+            onChange={(e) => setUnsuspendReason(e.target.value)}
+            placeholder="Enter reason"
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUnsuspend}
               className="bg-green-500 hover:bg-green-600"
-              disabled={unsuspendUser.isPending}
+              disabled={unsuspendUser.isPending || !unsuspendReason}
             >
               {unsuspendUser.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Unsuspending...</>
@@ -208,9 +258,9 @@ export const UserDetail = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Delete User Permanently</AlertDialogTitle>
+            <AlertDialogTitle className="text-destructive">Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              This action <strong>cannot be undone</strong>. This will permanently delete the user account.
+              This will revoke access and mark the user as deleted.
               <br /><br />
               Type <code className="bg-muted px-1 rounded">DELETE {user.email}</code> to confirm:
             </AlertDialogDescription>
@@ -221,17 +271,55 @@ export const UserDetail = () => {
             placeholder={`DELETE ${user.email}`}
             className="mt-2"
           />
+          <Input
+            value={deleteReason}
+            onChange={(e) => setDeleteReason(e.target.value)}
+            placeholder="Enter reason"
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90"
-              disabled={deleteUser.isPending || deleteConfirmText !== `DELETE ${user.email}`}
+              disabled={deleteUser.isPending || deleteConfirmText !== `DELETE ${user.email}` || !deleteReason}
             >
               {deleteUser.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deleting...</>
               ) : (
                 'Delete User'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Restore Deleted Dialog */}
+      <AlertDialog open={false} onOpenChange={() => {}}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore User</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear deletion status and restore access as configured.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={restoreReason}
+            onChange={(e) => setRestoreReason(e.target.value)}
+            placeholder="Enter reason"
+            className="mt-2"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRestore}
+              className="bg-green-500 hover:bg-green-600"
+              disabled={restoreUser.isPending || !restoreReason}
+            >
+              {restoreUser.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Restoring...</>
+              ) : (
+                'Restore User'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -274,14 +362,31 @@ export const UserDetail = () => {
               Suspend
             </Button>
           )}
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
+          {isSuperAdmin && (
+            <>
+              {!isDeleted && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+              {isDeleted && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRestore}
+                  className="border-green-500/50 text-green-600 hover:bg-green-50"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Restore
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
 

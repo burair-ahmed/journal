@@ -77,9 +77,15 @@ export const BlogEditor = () => {
     setIsSubmitting(true);
     try {
       const formData = { ...data, content };
+      const reason = window.prompt('Enter reason for this change');
+      if (isEditMode && !reason) {
+        toast.error('Reason is required');
+        setIsSubmitting(false);
+        return;
+      }
       
       if (isEditMode && postId) {
-        await updatePost.mutateAsync({ id: postId, data: formData });
+        await updatePost.mutateAsync({ id: postId, data: formData, reason: reason || '' });
       } else {
         await createPost.mutateAsync(formData);
       }
@@ -224,7 +230,7 @@ export const BlogEditor = () => {
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
-                onValueChange={(value: any) => setValue('status', value)}
+                onValueChange={(value: 'draft' | 'published' | 'scheduled') => setValue('status', value)}
                 defaultValue={post?.status || 'draft'}
               >
                 <SelectTrigger>
