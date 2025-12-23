@@ -40,6 +40,7 @@ const App = () => (
           <Route path="/mentor/access/:token" element={<MentorSharedView />} />
           <Route path="/resources" element={<Index />} />
           <Route path="/resources/:slug" element={<BlogPost />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           
           {/* Admin Routes - Separate Layout */}
           <Route path="/admin" element={<AdminLayout />}>
