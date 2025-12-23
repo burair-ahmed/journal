@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
+import { ResourceCenter } from "@/views/ResourceCenter";
 import { TopHeader } from "@/components/layout/TopHeader";
 import toast from 'react-hot-toast';
 import { TradezellaProfitFactorCard } from "./TradezellaProfitFactorCard";
@@ -25,9 +26,7 @@ import { ImpersonationBanner } from "@/components/mentor/ImpersonationBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TradeReplay } from "@/views/TradeReplay";
-import { AdminDashboard } from "@/views/admin/AdminDashboard";
-import { UserDirectory } from "@/views/admin/UserDirectory";
-import { UserDetail } from "@/views/admin/UserDetail";
+
 
 // ✨ Dashboard Personalization imports
 import { EmptySlot } from './EmptySlot';
@@ -329,22 +328,12 @@ const DashboardContent = () => {
       case "menteeView":
         return <MenteeDetailView />;
 
-      case "adminDashboard":
-        return <AdminDashboard />;
 
-      case "adminUsers":
-        return <UserDirectory />;
+      
+      case "resourceCenter":
+        return <ResourceCenter />;
 
-      case "adminUserDetail":
-        return <UserDetail />;
 
-      case "adminAnalytics":
-        return (
-          <div className="text-center text-foreground mt-20">
-            <h1 className="text-2xl font-semibold mb-2">Advanced Analytics</h1>
-            <p className="text-muted-foreground">Coming soon</p>
-          </div>
-        );
 
       default:
         return (

@@ -10,6 +10,7 @@ import { ToasterProvider } from "./components/ui/ToasterProvider";
 import { MentorSharedView } from "./components/mentor/MentorSharedView";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminDashboard } from "./views/admin/AdminDashboard";
+import { AnnouncementsManager } from "./views/admin/AnnouncementsManager";
 import { UserDirectory } from "./views/admin/UserDirectory";
 import { UserDetail } from "./views/admin/UserDetail";
 import { BlogList } from "./views/admin/BlogList";
@@ -40,12 +41,14 @@ const App = () => (
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserDirectory />} />
             <Route path="users/:userId" element={<UserDetail />} />
+            <Route path="announcements" element={<AnnouncementsManager />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="blog" element={<BlogList />} />
             <Route path="blog/new" element={<BlogEditor />} />
             <Route path="blog/edit/:postId" element={<BlogEditor />} />
             <Route path="settings" element={<SystemSettings />} />
             <Route path="audit" element={<AuditLog />} />
+            <Route path="announcements" element={<AnnouncementsManager />} />
           </Route>
           
           {/* 404 - Must be last */}

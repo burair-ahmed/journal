@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Globe,
   Plus,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUI } from "@/contexts/UIContext";
@@ -62,12 +63,12 @@ export const Sidebar = () => {
     { icon: Globe, label: "Resource Center", view: "resourceCenter", id: "resourceCenter" },
   ];
 
-  // Admin menu items (only visible to admins)
-  const adminMenuItems = [
-    { icon: BarChart3, label: "Admin Dashboard", view: "adminDashboard", id: "adminDashboard", isAdmin: true },
-    { icon: Users, label: "Manage Users", view: "adminUsers", id: "adminUsers", isAdmin: true },
-    { icon: BarChart3, label: "Analytics", view: "adminAnalytics", id: "adminAnalytics", isAdmin: true },
-  ];
+  // const adminMenuItems = [
+  //   { icon: BarChart3, label: "Admin Dashboard", view: "adminDashboard", id: "adminDashboard", isAdmin: true },
+  //   { icon: Users, label: "Manage Users", view: "adminUsers", id: "adminUsers", isAdmin: true },
+  //   { icon: Megaphone, label: "Announcements", view: "adminAnnouncements", id: "adminAnnouncements", isAdmin: true },
+  //   { icon: BarChart3, label: "Analytics", view: "adminAnalytics", id: "adminAnalytics", isAdmin: true },
+  // ];
 
   // Filter menu items based on mentor permissions
   const menuItems = allMenuItems.filter(item => {
@@ -133,6 +134,7 @@ export const Sidebar = () => {
           </div>
         ))}
 
+        {/* Admin Section (only visible to admins) */}
         {/* Admin Section (only visible to admins) */}
         {isAdmin && (
           <>

@@ -17,6 +17,7 @@ import {
   LogOut,
   Shield,
   ChevronLeft,
+  Megaphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +26,7 @@ const adminMenuItems = [
   { icon: Users, label: 'Users', path: '/admin/users' },
   { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
   { icon: FileText, label: 'Blog', path: '/admin/blog' },
+  { icon: Megaphone, label: "Announcements", path: '/admin/announcements' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
   { icon: Shield, label: 'Audit Log', path: '/admin/audit' },
 ];
