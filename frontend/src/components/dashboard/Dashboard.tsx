@@ -54,6 +54,8 @@ const DashboardContent = () => {
       setActiveView('mentorMode');
     } else if (location.pathname === '/trade-replay') {
       setActiveView('tradeReplay');
+    } else if (location.pathname === '/resources') {
+      setActiveView('resourceCenter');
     }
   }, [location.pathname, setActiveView]);
 

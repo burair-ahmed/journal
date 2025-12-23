@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Calendar } from "lucide-react";
+import { FileText, Calendar, ArrowRight } from "lucide-react";
 import { useResourceCenter } from "@/hooks/useResourceCenter";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -35,43 +35,67 @@ export const ResourceCenter = () => {
             {blogs.map(post => (
                 <Card 
                   key={post.id} 
-                  className="flex flex-col h-full hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0 shadow-lg bg-card/50 backdrop-blur-sm"
+                  className="group relative flex flex-col h-full border-muted/20 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 cursor-pointer overflow-hidden rounded-2xl"
                   onClick={() => navigate(`/resources/${post.slug}`)}
                 >
-                      {post.featured_image && (
-                        <div className="h-48 w-full overflow-hidden">
-                            <img src={post.featured_image} alt={post.title} className="w-full h-full object-cover transition-transform hover:scale-105 duration-500" />
-                        </div>
-                    )}
-                    <CardHeader>
-                        <div className="flex gap-2 mb-2">
+                      {/* Image Container with Overlay */}
+                      <div className="relative h-52 w-full overflow-hidden">
+                         {post.featured_image ? (
+                            <img 
+                              src={post.featured_image} 
+                              alt={post.title} 
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                            />
+                         ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center">
+                              <FileText className="w-12 h-12 text-muted-foreground/20" />
+                            </div>
+                         )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
+                         
+                         {/* Floating Badges */}
+                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                             {post.categories.slice(0, 2).map(cat => (
-                                <Badge key={cat} variant="secondary" className="text-xs">{cat}</Badge>
+                                <Badge key={cat} className="bg-black/50 hover:bg-black/70 backdrop-blur-md border-white/10 text-white font-medium px-3 py-1">
+                                  {cat}
+                                </Badge>
                             ))}
-                        </div>
-                        <CardTitle className="line-clamp-2 text-lg">{post.title}</CardTitle>
-                        <CardDescription className="flex items-center gap-2 text-xs">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(post.published_at || post.created_at), 'MMM d, yyyy')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {post.excerpt || post.content.substring(0, 150)}...
-                          </p>
-                    </CardContent>
-                      <div className="p-6 pt-0 mt-auto">
-                        <Button 
-                          variant="outline" 
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/resources/${post.slug}`);
-                          }}
-                        >
-                          Read Article
-                        </Button>
+                         </div>
                       </div>
+
+                      <CardContent className="flex flex-col flex-1 p-6 space-y-4">
+                          <div className="space-y-2">
+                              <CardTitle className="text-xl font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                                {post.title}
+                              </CardTitle>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {format(new Date(post.published_at || post.created_at), 'MMM d, yyyy')}
+                                  </div>
+                                  <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                                  <span>5 min read</span>
+                              </div>
+                          </div>
+
+                          <CardDescription className="text-sm text-muted-foreground/80 line-clamp-3 leading-relaxed">
+                              {post.excerpt || post.content.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                          </CardDescription>
+
+                          <div className="pt-4 mt-auto">
+                            <Button 
+                              variant="ghost" 
+                              className="group/btn w-full justify-between hover:bg-primary/10 hover:text-primary transition-colors p-0 h-auto font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/resources/${post.slug}`);
+                              }}
+                            >
+                              Read Article
+                              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            </Button>
+                          </div>
+                      </CardContent>
                 </Card>
             ))}
         </div>

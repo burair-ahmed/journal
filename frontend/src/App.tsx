@@ -38,6 +38,7 @@ const App = () => (
           <Route path="/mentorship" element={<Index />} />
           <Route path="/trade-replay" element={<Index />} />
           <Route path="/mentor/access/:token" element={<MentorSharedView />} />
+          <Route path="/resources" element={<Index />} />
           <Route path="/resources/:slug" element={<BlogPost />} />
           
           {/* Admin Routes - Separate Layout */}
