@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -40,6 +48,11 @@ export const BlogEditor = () => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Dialog State
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [updateReason, setUpdateReason] = useState('');
+  const [pendingFormData, setPendingFormData] = useState<BlogFormData | null>(null);
 
   // Load data when editing
   useEffect(() => {
@@ -74,26 +87,43 @@ export const BlogEditor = () => {
       return;
     }
 
+    const formData = { ...data, content };
+
+    if (isEditMode) {
+      setPendingFormData(formData);
+      setIsUpdateDialogOpen(true);
+      return;
+    }
+
+    await executeSubmit(formData);
+  };
+
+  const executeSubmit = async (data: BlogFormData, reason?: string) => {
     setIsSubmitting(true);
     try {
-      const formData = { ...data, content };
-      const reason = window.prompt('Enter reason for this change');
-      if (isEditMode && !reason) {
-        toast.error('Reason is required');
-        setIsSubmitting(false);
-        return;
-      }
-      
       if (isEditMode && postId) {
-        await updatePost.mutateAsync({ id: postId, data: formData, reason: reason || '' });
+        await updatePost.mutateAsync({ id: postId, data, reason: reason || '' });
       } else {
-        await createPost.mutateAsync(formData);
+        await createPost.mutateAsync(data);
       }
       navigate('/admin/blog');
     } catch (error) {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+      setIsUpdateDialogOpen(false);
+      setPendingFormData(null);
+      setUpdateReason('');
+    }
+  };
+
+  const onConfirmUpdate = () => {
+    if (!updateReason.trim()) {
+      toast.error('Reason is required');
+      return;
+    }
+    if (pendingFormData) {
+      executeSubmit(pendingFormData, updateReason);
     }
   };
 
@@ -308,6 +338,34 @@ export const BlogEditor = () => {
           </Card>
         </div>
       </div>
+
+
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Post</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for this update. This helps in tracking content changes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-4">
+            <Label htmlFor="update-reason">Reason</Label>
+            <Input
+              id="update-reason"
+              value={updateReason}
+              onChange={(e) => setUpdateReason(e.target.value)}
+              placeholder="e.g., Fixed typo, Updated SEO tags..."
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUpdateDialogOpen(false)}>Cancel</Button>
+            <Button onClick={onConfirmUpdate} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Update'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
