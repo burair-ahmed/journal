@@ -53,8 +53,8 @@ export const useBlogPosts = (page = 1, limit = 10, status?: string) => {
         .from('blog_posts')
         .select(`
           *,
-          author:users!author_id(email, name),
-          analytics:blog_analytics(views, likes)
+          author:users!fk_blog_author(email, name),
+          analytics:blog_analytics!fk_blog_analytics_post(views, likes)
         `, { count: 'exact' });
 
       if (status) {
@@ -323,7 +323,7 @@ export const usePublishedBlogPosts = (limit = 6) => {
         .from('blog_posts')
         .select(`
           id, title, slug, excerpt, featured_image, categories, tags, published_at, created_at,
-          author:users!author_id(name)
+          author:users!fk_blog_author(name)
         `)
         .eq('status', 'published')
         .order('published_at', { ascending: false })
@@ -340,5 +340,33 @@ export const usePublishedBlogPosts = (limit = 6) => {
           : { name: 'Unknown', email: '' }
       })) as Partial<BlogPost>[];
     },
+  });
+};
+
+// Get single published blog post by slug (public view)
+export const useBlogPostBySlug = (slug: string) => {
+  return useQuery({
+    queryKey: ['blog-post-slug', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select(`
+          *,
+          author:users!fk_blog_author(name)
+        `)
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single();
+
+      if (error) throw error;
+      
+      return {
+        ...data,
+        author: Array.isArray(data.author) && data.author.length > 0
+          ? { name: data.author[0].name }
+          : { name: 'Unknown' }
+      } as BlogPost;
+    },
+    enabled: !!slug,
   });
 };

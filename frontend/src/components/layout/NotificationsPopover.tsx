@@ -15,17 +15,19 @@ import {
 } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useMentorships } from "@/hooks/mentor/useMentorships";
-import { Bell, Users, ClipboardList, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
+import { Bell, Users, ClipboardList, CheckCircle2, XCircle, MessageCircle, Check } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 dayjs.extend(relativeTime);
 
 export const NotificationsPopover: React.FC = () => {
-  const { notifications, unreadCount, isLoading, refetch } = useNotifications();
+  const { notifications, unreadCount, isLoading, refetch, markAsRead, markAllAsRead } = useNotifications();
   const { acceptInvite, rejectInvite } = useMentorships();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -46,24 +48,39 @@ export const NotificationsPopover: React.FC = () => {
     }
   };
 
-  const handleAcceptInvite = async (mentorshipId: string) => {
+  const handleAcceptInvite = async (e: React.MouseEvent, notificationId: string, mentorshipId: string) => {
+    e.stopPropagation();
     await acceptInvite(mentorshipId);
+    markAsRead(notificationId);
     refetch();
   };
 
-  const handleRejectInvite = async (mentorshipId: string) => {
+  const handleRejectInvite = async (e: React.MouseEvent, notificationId: string, mentorshipId: string) => {
+    e.stopPropagation();
     await rejectInvite(mentorshipId);
+    markAsRead(notificationId);
     refetch();
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    if (notification.link) {
+      navigate(notification.link);
+      setIsOpen(false);
+    }
   };
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-accent hover:bg-accent text-white text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-[10px]"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
@@ -71,26 +88,36 @@ export const NotificationsPopover: React.FC = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
-        <div className="border-b p-4 bg-gradient-to-r from-primary/10 to-secondary/10">
+        <div className="flex items-center justify-between border-b p-4 bg-gradient-to-r from-primary/10 to-secondary/10">
           <h3 className="font-semibold flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />
             Notifications
             {unreadCount > 0 && (
-              <Badge variant="secondary" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto bg-background/50 hover:bg-background/80 transition-colors">
                 {unreadCount} new
               </Badge>
             )}
           </h3>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => markAllAsRead()} 
+              className="h-7 px-2 text-xs hover:bg-background/50"
+            >
+              <Check className="h-3 w-3 mr-1" /> Mark all read
+            </Button>
+          )}
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-[80vh] overflow-y-auto">
           {isLoading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               Loading...
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-8 text-center">
-              <CheckCircle2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <CheckCircle2 className="h-10 w-10 text-muted mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">All caught up!</p>
             </div>
           ) : (
@@ -98,57 +125,62 @@ export const NotificationsPopover: React.FC = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="p-4 hover:bg-muted/50 transition-colors"
+                  className={cn(
+                    "p-4 hover:bg-muted/50 transition-colors cursor-pointer relative group",
+                    !notification.is_read && "bg-muted/20 border-l-2 border-l-primary"
+                  )}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex gap-3">
                     <div className="mt-1">{getIcon(notification.type)}</div>
-                    <div className="flex-1 space-y-2">
-                      <div>
-                        <p className="text-sm font-medium">{notification.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {notification.message}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between items-start">
+                        <p className={cn("text-sm font-medium leading-none", !notification.is_read && "text-foreground")}>
+                            {notification.title}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
                           {dayjs(notification.created_at).fromNow()}
-                        </p>
+                        </span>
                       </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {notification.message}
+                      </p>
 
                       {/* Action buttons for mentor invites */}
-                      {notification.type === "mentor_invite" && notification.metadata && (
+                      {notification.type === "mentor_invite" && notification.metadata?.mentorship_id && (
                         <div className="flex gap-2 pt-2">
                           <Button
                             size="sm"
-                            className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
-                            onClick={() => handleAcceptInvite(notification.metadata.id)}
+                            className="h-7 text-xs flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={(e) => handleAcceptInvite(e, notification.id, notification.metadata.mentorship_id)}
                           >
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
                             Accept
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRejectInvite(notification.metadata.id)}
+                            className="h-7 text-xs flex-1 text-destructive hover:bg-destructive/10"
+                            onClick={(e) => handleRejectInvite(e, notification.id, notification.metadata.mentorship_id)}
                           >
-                            <XCircle className="h-3 w-3 mr-1" />
                             Decline
                           </Button>
                         </div>
                       )}
-
-                      {/* View button for assignments and other links */}
-                      {notification.type !== "mentor_invite" && notification.link && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full mt-2"
-                          onClick={() => navigate(notification.link!)}
-                        >
-                          View Details
-                        </Button>
-                      )}
                     </div>
                   </div>
+                  {!notification.is_read && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 rounded-full" 
+                            title="Mark as read"
+                            onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
+                        >
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                        </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

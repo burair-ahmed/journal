@@ -5,16 +5,19 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export interface Notification {
-  id: string;
-  type: 'mentor_invite' | 'assignment' | 'assignment_submission' | 'assignment_review' | 'question' | 'question_response' | 'request_reviewed';
+  id: string; // UUID
+  user_id?: string; // Optional because broadcasts don't have a specific user_id
+  type: 'mentor_invite' | 'assignment' | 'assignment_submission' | 'assignment_review' | 'question' | 'question_response' | 'request_reviewed' | 'system';
   title: string;
   message: string;
-  created_at: string;
-  read: boolean;
   link?: string;
   metadata?: any;
+  is_read: boolean;
+  created_at: string;
+  is_broadcast?: boolean; // Flag to distinguish
 }
 
 export function useNotifications() {
@@ -28,165 +31,67 @@ export function useNotifications() {
 
     try {
       setIsLoading(true);
-      const allNotifications: Notification[] = [];
-
-      // 1. Fetch pending mentor invites (where I'm the mentor)
-      const { data: invites, error: invitesError } = await supabase
-        .from('mentorships')
-        .select('*')
-        .eq('mentor_id', user.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (invitesError) throw invitesError;
-
-      if (invites) {
-        // Fetch emails for each invite
-        for (const invite of invites) {
-          const { data: email } = await supabase.rpc('get_user_email_by_id', { user_uuid: invite.mentee_id });
-          
-          allNotifications.push({
-            id: `invite-${invite.id}`,
-            type: 'mentor_invite',
-            title: 'New Mentor Invitation',
-            message: `${email || 'A student'} wants you to be their mentor`,
-            created_at: invite.created_at,
-            read: false,
-            link: '/mentorship?tab=my-mentees',
-            metadata: invite,
-          });
-        }
-      }
-
-      // 2. Fetch new assignments (where I'm the mentee)
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from('mentor_assignments')
+      
+      // 1. Fetch Personal Notifications
+      const { data: personalData, error: personalError } = await supabase
+        .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'assigned') // Changed from 'pending' to 'assigned' based on new schema
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(50);
 
-      if (assignmentsError) throw assignmentsError;
+      if (personalError) throw personalError;
 
-      if (assignments) {
-        assignments.forEach((assignment) => {
-          allNotifications.push({
-            id: `assignment-${assignment.id}`,
-            type: 'assignment',
-            title: 'New Assignment',
-            message: assignment.title,
-            created_at: assignment.created_at,
-            read: false,
-            link: '/mentorship?tab=assignments',
-            metadata: assignment,
-          });
-        });
-      }
-
-      // 3. Fetch assignment submissions (where I'm the mentor)
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('mentor_assignments')
+      // 2. Fetch Broadcast Notifications
+      const { data: broadcastData, error: broadcastError } = await supabase
+        .from('broadcast_notifications')
         .select('*')
-        .eq('mentor_id', user.id)
-        .eq('status', 'submitted')
-        .order('submitted_at', { ascending: false })
-        .limit(5);
-
-      if (!submissionsError && submissions) {
-        for (const submission of submissions) {
-          const { data: mentee } = await supabase.from('users').select('email').eq('id', submission.user_id).single();
-          allNotifications.push({
-            id: `submission-${submission.id}`,
-            type: 'assignment_submission',
-            title: 'Assignment Submitted',
-            message: `${mentee?.email || 'Mentee'} submitted "${submission.title}"`,
-            created_at: submission.submitted_at || submission.updated_at,
-            read: false,
-            link: '/mentorship?tab=my-mentees&subtab=assignments',
-            metadata: submission,
-          });
-        }
-      }
-
-      // 4. Fetch assignment reviews (where I'm the mentee)
-      const { data: reviews, error: reviewsError } = await supabase
-        .from('mentor_assignments')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'reviewed')
-        .order('reviewed_at', { ascending: false })
-        .limit(5);
-
-      if (!reviewsError && reviews) {
-        reviews.forEach((review) => {
-          allNotifications.push({
-            id: `review-${review.id}`,
-            type: 'assignment_review',
-            title: 'Assignment Reviewed',
-            message: `Your assignment "${review.title}" has been reviewed`,
-            created_at: review.reviewed_at || review.updated_at,
-            read: false,
-            link: '/mentorship?tab=assignments',
-            metadata: review,
-          });
-        });
-      }
-
-      // 5. Fetch new questions (where I'm the mentor)
-      const { data: questions, error: questionsError } = await supabase
-        .from('mentor_requests')
-        .select('*')
-        .eq('mentor_id', user.id)
-        .eq('status', 'pending')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(20); // Limit global broadcasts to recent ones
 
-      if (!questionsError && questions) {
-        for (const question of questions) {
-          const { data: mentee } = await supabase.from('users').select('email').eq('id', question.user_id).single();
-          allNotifications.push({
-            id: `question-${question.id}`,
-            type: 'question',
-            title: 'New Question',
-            message: `${mentee?.email || 'Mentee'} asked: "${question.question.substring(0, 30)}..."`,
-            created_at: question.created_at,
-            read: false,
-            link: '/mentorship?tab=my-mentees&subtab=questions',
-            metadata: question,
-          });
-        }
+      if (broadcastError) throw broadcastError;
+
+      // 3. Fetch Read Status for Broadcasts
+      const broadcastIds = broadcastData?.map(n => n.id) || [];
+      let readBroadcastIds = new Set<string>();
+
+      if (broadcastIds.length > 0) {
+        const { data: readData, error: readError } = await supabase
+          .from('broadcast_reads')
+          .select('broadcast_id')
+          .eq('user_id', user.id)
+          .in('broadcast_id', broadcastIds);
+        
+        if (readError) throw readError;
+        
+        readData?.forEach((r: any) => readBroadcastIds.add(r.broadcast_id));
       }
 
-      // 6. Fetch question responses (where I'm the mentee)
-      const { data: responses, error: responsesError } = await supabase
-        .from('mentor_requests')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'reviewed')
-        .order('responded_at', { ascending: false })
-        .limit(5);
+      // 4. Merge and Transform
+      const formattedPersonal = (personalData || []).map((n: any) => ({
+        ...n,
+        is_broadcast: false
+      }));
 
-      if (!responsesError && responses) {
-        responses.forEach((response) => {
-          allNotifications.push({
-            id: `response-${response.id}`,
-            type: 'question_response',
-            title: 'Question Answered',
-            message: `Mentor answered: "${response.question.substring(0, 30)}..."`,
-            created_at: response.responded_at || response.updated_at,
-            read: false,
-            link: '/mentorship?tab=ask-mentor',
-            metadata: response,
-          });
-        });
-      }
+      const formattedBroadcasts = (broadcastData || []).map((n: any) => ({
+        id: n.id,
+        user_id: user.id, // technically not the owner, but for type consistency
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        link: n.link,
+        metadata: n.metadata,
+        created_at: n.created_at,
+        is_read: readBroadcastIds.has(n.id),
+        is_broadcast: true
+      }));
 
-      // Sort by created_at
-      allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const allNotifications = [...formattedPersonal, ...formattedBroadcasts]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setNotifications(allNotifications);
-      setUnreadCount(allNotifications.filter((n) => !n.read).length);
+      setUnreadCount(allNotifications.filter(n => !n.is_read).length);
+
     } catch (err: any) {
       console.error('Error fetching notifications:', err);
     } finally {
@@ -194,66 +99,115 @@ export function useNotifications() {
     }
   };
 
+  const markAsRead = async (id: string) => {
+    const target = notifications.find(n => n.id === id);
+    if (!target) return;
+
+    try {
+      // Optimistic updat
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+
+      if (target.is_broadcast) {
+        // Insert into broadcast_reads
+        const { error } = await supabase
+          .from('broadcast_reads')
+          .insert({ user_id: user?.id, broadcast_id: id });
+        
+        // Ignore duplicate key error (already read)
+        if (error && error.code !== '23505') throw error; 
+
+      } else {
+        // Update notifications table
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      console.error('Error marking notification as read:', err);
+      toast.error('Failed to update notification');
+      fetchNotifications(); // Revert on error
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      // Optimistic update
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+
+      const unreadPersonal = notifications.filter(n => !n.is_read && !n.is_broadcast);
+      const unreadBroadcasts = notifications.filter(n => !n.is_read && n.is_broadcast);
+
+      // 1. Update personal notifications
+      if (unreadPersonal.length > 0) {
+        await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('user_id', user?.id)
+          .eq('is_read', false);
+      }
+
+      // 2. Insert broadcast reads
+      if (unreadBroadcasts.length > 0) {
+        const readsToInsert = unreadBroadcasts.map(n => ({
+          user_id: user?.id,
+          broadcast_id: n.id
+        }));
+
+        await supabase
+          .from('broadcast_reads')
+          .upsert(readsToInsert, { onConflict: 'user_id, broadcast_id' });
+      }
+
+      toast.success('All notifications marked as read');
+    } catch (err: any) {
+      console.error('Error marking all as read:', err);
+      toast.error('Failed to update notifications');
+      fetchNotifications();
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
 
-    // Set up real-time subscription for new invites, assignments, and requests
-    const channel = supabase
-      .channel('notifications')
+    if (!user) return;
+
+    // Subscription for Personal Notifications
+    const personalChannel = supabase
+      .channel(`notifications:user:${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', 
           schema: 'public',
-          table: 'mentorships',
-          filter: `mentor_id=eq.${user?.id}`,
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
         },
         () => fetchNotifications()
       )
+      .subscribe();
+
+    // Subscription for Broadcasts
+    const broadcastChannel = supabase
+      .channel('notifications:broadcast')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT', // Only care about new broadcasts
           schema: 'public',
-          table: 'mentor_assignments',
-          filter: `user_id=eq.${user?.id}`,
-        },
-        () => fetchNotifications()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'mentor_assignments',
-          filter: `mentor_id=eq.${user?.id}`,
-        },
-        () => fetchNotifications()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'mentor_requests',
-          filter: `mentor_id=eq.${user?.id}`,
-        },
-        () => fetchNotifications()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'mentor_requests',
-          filter: `user_id=eq.${user?.id}`,
+          table: 'broadcast_notifications',
         },
         () => fetchNotifications()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(personalChannel);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [user]);
 
@@ -262,5 +216,7 @@ export function useNotifications() {
     unreadCount,
     isLoading,
     refetch: fetchNotifications,
+    markAsRead,
+    markAllAsRead
   };
 }

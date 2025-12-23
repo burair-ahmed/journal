@@ -5,8 +5,11 @@ import { useResourceCenter } from "@/hooks/useResourceCenter";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 
+import { useNavigate } from "react-router-dom";
+
 export const ResourceCenter = () => {
   const { blogs, isLoading } = useResourceCenter();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -30,7 +33,11 @@ export const ResourceCenter = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {blogs.map(post => (
-                <Card key={post.id} className="flex flex-col h-full hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0 shadow-lg bg-card/50 backdrop-blur-sm">
+                <Card 
+                  key={post.id} 
+                  className="flex flex-col h-full hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0 shadow-lg bg-card/50 backdrop-blur-sm"
+                  onClick={() => navigate(`/resources/${post.slug}`)}
+                >
                       {post.featured_image && (
                         <div className="h-48 w-full overflow-hidden">
                             <img src={post.featured_image} alt={post.title} className="w-full h-full object-cover transition-transform hover:scale-105 duration-500" />
@@ -54,7 +61,16 @@ export const ResourceCenter = () => {
                           </p>
                     </CardContent>
                       <div className="p-6 pt-0 mt-auto">
-                        <Button variant="outline" className="w-full">Read Article</Button>
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/resources/${post.slug}`);
+                          }}
+                        >
+                          Read Article
+                        </Button>
                       </div>
                 </Card>
             ))}

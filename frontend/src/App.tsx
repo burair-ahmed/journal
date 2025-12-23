@@ -20,6 +20,7 @@ import { SystemSettings } from "./views/admin/SystemSettings";
 import { AuditLog } from "./views/admin/AuditLog";
 import FAQsManager from "./views/admin/FAQsManager";
 import EmailTemplatesManager from "./views/admin/EmailTemplatesManager";
+import BlogPost from "./views/BlogPost";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/mentorship" element={<Index />} />
           <Route path="/trade-replay" element={<Index />} />
           <Route path="/mentor/access/:token" element={<MentorSharedView />} />
+          <Route path="/resources/:slug" element={<BlogPost />} />
           
           {/* Admin Routes - Separate Layout */}
           <Route path="/admin" element={<AdminLayout />}>
