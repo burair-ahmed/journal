@@ -1,14 +1,17 @@
 import { useActiveAnnouncements } from './useAnnouncements';
-import { useBlogPosts } from './useBlog';
+import { usePublishedBlogPosts } from './useBlog';
+import { useActiveFAQs } from './useFAQ';
 
 export const useResourceCenter = () => {
     const { data: announcements, isLoading: isLoadingAnnouncements } = useActiveAnnouncements();
-    // Fetch only published blog posts
-    const { data: blogData, isLoading: isLoadingBlogs } = useBlogPosts(1, 100, 'published'); 
+    // Fetch only published blog posts (optimized)
+    const { data: blogs, isLoading: isLoadingBlogs } = usePublishedBlogPosts(10); 
+    const { data: faqs, isLoading: isLoadingFAQs } = useActiveFAQs();
     
     return {
         announcements: announcements || [],
-        blogs: blogData?.posts || [],
-        isLoading: isLoadingAnnouncements || isLoadingBlogs
+        blogs: blogs || [],
+        faqs: faqs || [],
+        isLoading: isLoadingAnnouncements || isLoadingBlogs || isLoadingFAQs
     };
 };

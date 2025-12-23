@@ -313,3 +313,32 @@ export const useUploadImage = () => {
     },
   });
 };
+
+// Get published blog posts (user view) - Optimized for Resource Center
+export const usePublishedBlogPosts = (limit = 6) => {
+  return useQuery({
+    queryKey: ['published-blog-posts', limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select(`
+          id, title, slug, excerpt, featured_image, categories, tags, published_at, created_at,
+          author:users!author_id(name)
+        `)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      if (error) throw error;
+      
+      // Transform author array to expected object shape
+      return data.map((post: any) => ({
+        ...post,
+        author: Array.isArray(post.author) && post.author.length > 0 
+          ? { name: post.author[0].name, email: '' } // Provide default empty email to satisfy type
+          : { name: 'Unknown', email: '' }
+      })) as Partial<BlogPost>[];
+    },
+  });
+};

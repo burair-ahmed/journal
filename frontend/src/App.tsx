@@ -18,6 +18,8 @@ import { BlogEditor } from "./views/admin/BlogEditor";
 import { AdminAnalytics } from "./views/admin/AdminAnalytics";
 import { SystemSettings } from "./views/admin/SystemSettings";
 import { AuditLog } from "./views/admin/AuditLog";
+import FAQsManager from "./views/admin/FAQsManager";
+import EmailTemplatesManager from "./views/admin/EmailTemplatesManager";
 
 const queryClient = new QueryClient();
 
@@ -48,7 +50,8 @@ const App = () => (
             <Route path="blog/edit/:postId" element={<BlogEditor />} />
             <Route path="settings" element={<SystemSettings />} />
             <Route path="audit" element={<AuditLog />} />
-            <Route path="announcements" element={<AnnouncementsManager />} />
+            <Route path="faqs" element={<FAQsManager />} />
+            <Route path="email-templates" element={<EmailTemplatesManager />} />
           </Route>
           
           {/* 404 - Must be last */}

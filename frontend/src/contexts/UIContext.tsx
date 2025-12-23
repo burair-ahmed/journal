@@ -15,6 +15,8 @@ type View =
   | "menteeView"
   | "university"
   | "resourceCenter"
+  | "announcements"
+  | "faqs"
   | "addAccount"
   | "profile"
   | "addTrade"

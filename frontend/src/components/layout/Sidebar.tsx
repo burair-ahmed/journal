@@ -11,6 +11,7 @@ import {
   Globe,
   Plus,
   Megaphone,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUI } from "@/contexts/UIContext";
@@ -24,11 +25,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useIsAdmin } from "@/hooks/useAdmin";
+import { useActiveAnnouncements } from "@/hooks/useAnnouncements";
 
 export const Sidebar = () => {
   const { activeView, setActiveView } = useUI();
   const { user, setUser, loading, logout, isImpersonating, impersonatedMentorship } = useAuthContext();
   const { data: isAdmin } = useIsAdmin();
+  const { data: announcements } = useActiveAnnouncements();
   const [formData, setFormData] = useState({
     name: user?.name ?? "",
     username: user?.username ?? "",
@@ -61,6 +64,8 @@ export const Sidebar = () => {
     { icon: User, label: "Mentor Mode", view: "mentorMode", id: "mentorMode" },
     { icon: GraduationCap, label: "University", view: "university", id: "university" },
     { icon: Globe, label: "Resource Center", view: "resourceCenter", id: "resourceCenter" },
+    { icon: Megaphone, label: "Announcements", view: "announcements", id: "announcements", badge: announcements?.length ? announcements.length.toString() : undefined },
+    { icon: HelpCircle, label: "FAQs", view: "faqs", id: "faqs" },
   ];
 
   // const adminMenuItems = [

@@ -1,5 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ResourceCenter } from "@/views/ResourceCenter";
+import { UserAnnouncements } from "@/views/UserAnnouncements";
+import { UserFAQs } from "@/views/UserFAQs";
 import { TopHeader } from "@/components/layout/TopHeader";
 import toast from 'react-hot-toast';
 import { TradezellaProfitFactorCard } from "./TradezellaProfitFactorCard";
@@ -332,6 +334,12 @@ const DashboardContent = () => {
       
       case "resourceCenter":
         return <ResourceCenter />;
+      
+      case "announcements":
+        return <UserAnnouncements />;
+
+      case "faqs":
+        return <UserFAQs />;
 
 
 

@@ -18,6 +18,8 @@ import {
   Shield,
   ChevronLeft,
   Megaphone,
+  HelpCircle,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +29,8 @@ const adminMenuItems = [
   { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
   { icon: FileText, label: 'Blog', path: '/admin/blog' },
   { icon: Megaphone, label: "Announcements", path: '/admin/announcements' },
+  { icon: HelpCircle, label: 'FAQs', path: '/admin/faqs' },
+  { icon: Mail, label: 'Email Templates', path: '/admin/email-templates' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
   { icon: Shield, label: 'Audit Log', path: '/admin/audit' },
 ];
